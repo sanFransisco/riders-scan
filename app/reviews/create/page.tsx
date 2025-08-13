@@ -1,0 +1,350 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Star, ArrowLeft, Check, X } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { getDriverById } from '@/lib/db'
+
+interface RatingInputProps {
+  label: string
+  value: number
+  onChange: (value: number) => void
+  required?: boolean
+}
+
+function RatingInput({ label, value, onChange, required = false }: RatingInputProps) {
+  return (
+    <div className="space-y-2">
+      <Label className="text-sm font-medium">
+        {label} {required && <span className="text-red-500">*</span>}
+      </Label>
+      <div className="flex items-center gap-2">
+        {[1, 2, 3, 4, 5].map((rating) => (
+          <button
+            key={rating}
+            type="button"
+            onClick={() => onChange(rating)}
+            className={`p-1 rounded transition-colors ${
+              value >= rating ? 'text-yellow-400' : 'text-gray-300'
+            } hover:text-yellow-400`}
+          >
+            <Star className="h-6 w-6 fill-current" />
+          </button>
+        ))}
+        <span className="ml-2 text-sm text-muted-foreground">
+          {value > 0 ? `${value}/5` : 'Select rating'}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+export default function CreateReviewPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const driverId = searchParams.get('driverId')
+
+  const [formData, setFormData] = useState({
+    driverName: '',
+    licensePlate: '',
+    overallRating: 0,
+    pleasantnessRating: 0,
+    arrivalTimeRating: 0,
+    rideSpeedRating: 0,
+    wasOnTime: true,
+    waitingTimeMinutes: '',
+    priceFair: true,
+    comment: '',
+    rideCity: '',
+    rideDate: new Date().toISOString().split('T')[0]
+  })
+
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [driver, setDriver] = useState<any>(null)
+
+  useEffect(() => {
+    if (driverId) {
+      fetchDriver()
+    }
+  }, [driverId])
+
+  const fetchDriver = async () => {
+    try {
+      const driverData = await getDriverById(driverId!)
+      if (driverData) {
+        setDriver(driverData)
+        setFormData(prev => ({
+          ...prev,
+          driverName: driverData.full_name,
+          licensePlate: driverData.license_plate
+        }))
+      }
+    } catch (error) {
+      console.error('Error fetching driver:', error)
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!formData.overallRating) {
+      setError('Overall rating is required')
+      return
+    }
+
+    if (!formData.wasOnTime && !formData.waitingTimeMinutes) {
+      setError('Please specify waiting time when driver was late')
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create review')
+      }
+
+      // Redirect to driver profile
+      const driverId = driver?.id || 'new'
+      router.push(`/drivers/${driverId}`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create review')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const updateFormData = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <Button variant="outline" onClick={() => router.back()}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
+        </Button>
+        <div>
+          <h1 className="text-2xl font-bold">Create Review</h1>
+          <p className="text-muted-foreground">
+            Share your experience with this driver
+          </p>
+        </div>
+      </div>
+
+      {/* Driver Info */}
+      {driver && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Driver Information</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div>
+                <Label className="text-sm font-medium">Driver Name</Label>
+                <p className="text-lg font-semibold">{driver.full_name}</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">License Plate</Label>
+                <p className="text-lg font-mono">{driver.license_plate}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Review Form */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Review Details</CardTitle>
+          <CardDescription>
+            Rate your experience with this driver
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Driver Info (if not pre-filled) */}
+            {!driver && (
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="driverName" className="text-sm font-medium">
+                    Driver Name <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="driverName"
+                    value={formData.driverName}
+                    onChange={(e) => updateFormData('driverName', e.target.value)}
+                    placeholder="Enter driver's full name"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="licensePlate" className="text-sm font-medium">
+                    License Plate <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="licensePlate"
+                    value={formData.licensePlate}
+                    onChange={(e) => updateFormData('licensePlate', e.target.value)}
+                    placeholder="Enter license plate"
+                    required
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Ratings */}
+            <div className="space-y-4">
+              <RatingInput
+                label="Overall Experience"
+                value={formData.overallRating}
+                onChange={(value) => updateFormData('overallRating', value)}
+                required
+              />
+              <RatingInput
+                label="Ride Pleasantness"
+                value={formData.pleasantnessRating}
+                onChange={(value) => updateFormData('pleasantnessRating', value)}
+              />
+              <RatingInput
+                label="Arrival Time Accuracy"
+                value={formData.arrivalTimeRating}
+                onChange={(value) => updateFormData('arrivalTimeRating', value)}
+              />
+              <RatingInput
+                label="Ride Speed/Efficiency"
+                value={formData.rideSpeedRating}
+                onChange={(value) => updateFormData('rideSpeedRating', value)}
+              />
+            </div>
+
+            {/* Punctuality */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="wasOnTime"
+                  checked={formData.wasOnTime}
+                  onCheckedChange={(checked) => updateFormData('wasOnTime', checked)}
+                />
+                <Label htmlFor="wasOnTime" className="text-sm font-medium">
+                  Driver arrived on time
+                </Label>
+              </div>
+
+              {!formData.wasOnTime && (
+                <div className="space-y-2">
+                  <Label htmlFor="waitingTime" className="text-sm font-medium">
+                    How many minutes late? <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="waitingTime"
+                    type="number"
+                    min="1"
+                    value={formData.waitingTimeMinutes}
+                    onChange={(e) => updateFormData('waitingTimeMinutes', e.target.value)}
+                    placeholder="Enter waiting time in minutes"
+                    required={!formData.wasOnTime}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Price Fairness */}
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="priceFair"
+                checked={formData.priceFair}
+                onCheckedChange={(checked) => updateFormData('priceFair', checked)}
+              />
+              <Label htmlFor="priceFair" className="text-sm font-medium">
+                Price was fair for the service
+              </Label>
+            </div>
+
+            {/* Additional Info */}
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="rideCity" className="text-sm font-medium">
+                  City/Area of Ride
+                </Label>
+                <Input
+                  id="rideCity"
+                  value={formData.rideCity}
+                  onChange={(e) => updateFormData('rideCity', e.target.value)}
+                  placeholder="e.g., Downtown, Airport"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="rideDate" className="text-sm font-medium">
+                  Date of Ride
+                </Label>
+                <Input
+                  id="rideDate"
+                  type="date"
+                  value={formData.rideDate}
+                  onChange={(e) => updateFormData('rideDate', e.target.value)}
+                  max={new Date().toISOString().split('T')[0]}
+                />
+              </div>
+            </div>
+
+            {/* Comment */}
+            <div className="space-y-2">
+              <Label htmlFor="comment" className="text-sm font-medium">
+                Additional Comments
+              </Label>
+              <textarea
+                id="comment"
+                value={formData.comment}
+                onChange={(e) => updateFormData('comment', e.target.value)}
+                placeholder="Share any additional details about your experience..."
+                className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              />
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-md">
+                <X className="h-4 w-4 text-red-600" />
+                <span className="text-sm text-red-600">{error}</span>
+              </div>
+            )}
+
+            {/* Submit Button */}
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Creating Review...
+                </>
+              ) : (
+                <>
+                  <Check className="h-4 w-4 mr-2" />
+                  Submit Review
+                </>
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
