@@ -2,9 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface User {
   id: string
@@ -84,51 +81,46 @@ export default function AdminUsersPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold">User Management</h1>
-        <p className="text-muted-foreground">Manage user roles and permissions</p>
+        <p className="text-gray-600">Manage user roles and permissions</p>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center">Loading users...</div>
       ) : (
-        <div className="grid gap-4">
+        <div className="space-y-4">
           {users.map((user) => (
-            <Card key={user.id}>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>{user.name || user.email}</span>
-                  <span className={`px-2 py-1 rounded text-sm ${
-                    user.role === 'admin' ? 'bg-red-100 text-red-800' :
-                    user.role === 'moderator' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-green-100 text-green-800'
-                  }`}>
-                    {user.role}
-                  </span>
-                </CardTitle>
-                <CardDescription>{user.email}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-muted-foreground">Role:</span>
-                  <Select
-                    value={user.role}
-                    onValueChange={(value) => updateUserRole(user.id, value)}
-                    disabled={updating === user.id}
-                  >
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="user">User</SelectItem>
-                      <SelectItem value="moderator">Moderator</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {updating === user.id && (
-                    <span className="text-sm text-muted-foreground">Updating...</span>
-                  )}
+            <div key={user.id} className="bg-white rounded-lg border p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold">{user.name || user.email}</h3>
+                  <p className="text-gray-600">{user.email}</p>
                 </div>
-              </CardContent>
-            </Card>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  user.role === 'admin' ? 'bg-red-100 text-red-800' :
+                  user.role === 'moderator' ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-green-100 text-green-800'
+                }`}>
+                  {user.role}
+                </span>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-gray-600">Role:</span>
+                <select
+                  value={user.role}
+                  onChange={(e) => updateUserRole(user.id, e.target.value)}
+                  disabled={updating === user.id}
+                  className="border rounded px-3 py-2 bg-white"
+                >
+                  <option value="user">User</option>
+                  <option value="moderator">Moderator</option>
+                  <option value="admin">Admin</option>
+                </select>
+                {updating === user.id && (
+                  <span className="text-sm text-gray-500">Updating...</span>
+                )}
+              </div>
+            </div>
           ))}
         </div>
       )}
