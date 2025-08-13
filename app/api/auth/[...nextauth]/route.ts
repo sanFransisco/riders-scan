@@ -15,7 +15,7 @@ export const serverAuthOptions = {
     }),
   ],
   callbacks: {
-    async signIn({ user, account, profile }: { user: any; account: any; profile: any }) {
+    async signIn({ user, account, profile }: { user: any; account: any; profile?: any }) {
       if (account?.provider === 'google') {
         try {
           // Store or update user in database
@@ -30,8 +30,8 @@ export const serverAuthOptions = {
           if (existingUser.rows.length === 0) {
             // Create new user
             await client.query(
-              'INSERT INTO users (email, name, role) VALUES ($1, $2, $3)',
-              [user.email, user.name, ARRAY['user']]
+              'INSERT INTO users (email, name, role) VALUES ($1, $2, ARRAY[$3])',
+              [user.email, user.name, 'user']
             )
           } else {
             // Update existing user
@@ -87,7 +87,7 @@ export const authOptions = {
     }),
   ],
   callbacks: {
-    async signIn({ user, account, profile }: { user: any; account: any; profile: any }) {
+    async signIn({ user, account, profile }: { user: any; account: any; profile?: any }) {
       if (account?.provider === 'google') {
         try {
           // Store or update user in database
@@ -102,8 +102,8 @@ export const authOptions = {
           if (existingUser.rows.length === 0) {
             // Create new user
             await client.query(
-              'INSERT INTO users (email, name, role) VALUES ($1, $2, $3)',
-              [user.email, user.name, ARRAY['user']]
+              'INSERT INTO users (email, name, role) VALUES ($1, $2, ARRAY[$3])',
+              [user.email, user.name, 'user']
             )
           } else {
             // Update existing user
