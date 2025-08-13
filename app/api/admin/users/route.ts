@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { serverAuthOptions } from '@/app/api/auth/[...nextauth]/route'
 import { pool } from '@/lib/supabase-db'
 
 export async function GET(request: NextRequest) {
   try {
     // Check authentication
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(serverAuthOptions)
     console.log('Admin users API - Session:', session)
     
     if (!session || !session.user?.id) {

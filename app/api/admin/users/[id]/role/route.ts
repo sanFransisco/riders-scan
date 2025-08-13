@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { serverAuthOptions } from '@/app/api/auth/[...nextauth]/route'
 import { pool } from '@/lib/supabase-db'
 
 export async function PUT(
@@ -9,7 +9,7 @@ export async function PUT(
 ) {
   try {
     // Check authentication
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(serverAuthOptions)
     
     if (!session || !session.user?.id) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
@@ -70,7 +70,7 @@ export async function GET(
 ) {
   try {
     // Check authentication
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(serverAuthOptions)
     
     if (!session || !session.user?.id) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
