@@ -18,7 +18,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <div className="min-h-screen bg-background">
-          <header className="border-b">
+          <header className="fixed top-0 left-0 right-0 bg-background border-b z-40">
             <div className="container mx-auto px-4 py-4">
               <h1 className="text-2xl font-bold text-primary">
                 🚗 Riders Scan
@@ -28,7 +28,7 @@ export default function RootLayout({
               </p>
             </div>
           </header>
-          <main className="container mx-auto px-4 py-8">
+          <main className="pt-20">
             {children}
           </main>
         </div>

@@ -1,14 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Star, ArrowLeft, Check, X } from 'lucide-react'
+import { Star, ArrowLeft, Check, X, CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { getDriverById } from '@/lib/supabase-db'
 
 interface RatingInputProps {
   label: string
@@ -54,8 +53,7 @@ export default function CreateReviewPage() {
     licensePlate: '',
     overallRating: 0,
     pleasantnessRating: 0,
-    arrivalTimeRating: 0,
-    rideSpeedRating: 0,
+    rideSpeedSatisfied: true,
     wasOnTime: true,
     waitingTimeMinutes: '',
     priceFair: true,
@@ -67,29 +65,6 @@ export default function CreateReviewPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  const [driver, setDriver] = useState<any>(null)
-
-  useEffect(() => {
-    if (driverId) {
-      fetchDriver()
-    }
-  }, [driverId])
-
-  const fetchDriver = async () => {
-    try {
-      const driverData = await getDriverById(driverId!)
-      if (driverData) {
-        setDriver(driverData)
-        setFormData(prev => ({
-          ...prev,
-          driverName: driverData.full_name,
-          licensePlate: driverData.license_plate
-        }))
-      }
-    } catch (error) {
-      console.error('Error fetching driver:', error)
-    }
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -125,8 +100,8 @@ export default function CreateReviewPage() {
       setSuccess(true)
       setTimeout(() => {
         const successParams = new URLSearchParams()
-        if (driver?.id) successParams.set('driverId', driver.id)
-        if (driver?.full_name) successParams.set('driverName', driver.full_name)
+        if (driverId) successParams.set('driverId', driverId)
+        if (formData.driverName) successParams.set('driverName', formData.driverName)
         router.push(`/reviews/success?${successParams.toString()}`)
       }, 1500)
     } catch (err) {
@@ -156,27 +131,6 @@ export default function CreateReviewPage() {
         </div>
       </div>
 
-      {/* Driver Info */}
-      {driver && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Driver Information</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div>
-                <Label className="text-sm font-medium">Driver Name</Label>
-                <p className="text-lg font-semibold">{driver.full_name}</p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium">License Plate</Label>
-                <p className="text-lg font-mono">{driver.license_plate}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Review Form */}
       <Card>
         <CardHeader>
@@ -187,40 +141,38 @@ export default function CreateReviewPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Driver Info (if not pre-filled) */}
-            {!driver && (
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="driverName" className="text-sm font-medium">
-                    Driver Name <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="driverName"
-                    value={formData.driverName}
-                    onChange={(e) => updateFormData('driverName', e.target.value)}
-                    placeholder="Enter driver's full name"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="licensePlate" className="text-sm font-medium">
-                    License Plate <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="licensePlate"
-                    value={formData.licensePlate}
-                    onChange={(e) => updateFormData('licensePlate', e.target.value)}
-                    placeholder="Enter license plate"
-                    required
-                  />
-                </div>
+            {/* Driver Info */}
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="driverName" className="text-sm font-medium">
+                  Driver Name <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="driverName"
+                  value={formData.driverName}
+                  onChange={(e) => updateFormData('driverName', e.target.value)}
+                  placeholder="Enter driver's full name"
+                  required
+                />
               </div>
-            )}
+              <div className="space-y-2">
+                <Label htmlFor="licensePlate" className="text-sm font-medium">
+                  License Plate <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="licensePlate"
+                  value={formData.licensePlate}
+                  onChange={(e) => updateFormData('licensePlate', e.target.value)}
+                  placeholder="Enter license plate number"
+                  required
+                />
+              </div>
+            </div>
 
             {/* Ratings */}
             <div className="space-y-4">
               <RatingInput
-                label="Overall Experience"
+                label="Overall Rating"
                 value={formData.overallRating}
                 onChange={(value) => updateFormData('overallRating', value)}
                 required
@@ -229,16 +181,6 @@ export default function CreateReviewPage() {
                 label="Ride Pleasantness"
                 value={formData.pleasantnessRating}
                 onChange={(value) => updateFormData('pleasantnessRating', value)}
-              />
-              <RatingInput
-                label="Arrival Time Accuracy"
-                value={formData.arrivalTimeRating}
-                onChange={(value) => updateFormData('arrivalTimeRating', value)}
-              />
-              <RatingInput
-                label="Ride Speed/Efficiency"
-                value={formData.rideSpeedRating}
-                onChange={(value) => updateFormData('rideSpeedRating', value)}
               />
             </div>
 
@@ -271,6 +213,18 @@ export default function CreateReviewPage() {
                   />
                 </div>
               )}
+            </div>
+
+            {/* Ride Speed */}
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="rideSpeedSatisfied"
+                checked={formData.rideSpeedSatisfied}
+                onCheckedChange={(checked) => updateFormData('rideSpeedSatisfied', checked)}
+              />
+              <Label htmlFor="rideSpeedSatisfied" className="text-sm font-medium">
+                Satisfied with ride speed
+              </Label>
             </div>
 
             {/* Price Fairness */}

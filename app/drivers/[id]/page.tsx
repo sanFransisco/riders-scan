@@ -145,21 +145,12 @@ export default function DriverProfilePage() {
               </div>
             </div>
             <div className="flex items-center justify-between">
-              <span>Arrival Time</span>
+              <span>Ride Speed Satisfaction</span>
               <div className="flex items-center gap-2">
-                <span className={`font-medium ${getRatingColor(analytics.avg_arrival_time || 0)}`}>
-                  {formatRating(analytics.avg_arrival_time || 0)}
+                <span className={`font-medium ${getPercentageColor(analytics.ride_speed_satisfied_percentage || 0)}`}>
+                  {analytics.ride_speed_satisfied_percentage || 0}%
                 </span>
-                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-              </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <span>Ride Speed</span>
-              <div className="flex items-center gap-2">
-                <span className={`font-medium ${getRatingColor(analytics.avg_ride_speed || 0)}`}>
-                  {formatRating(analytics.avg_ride_speed || 0)}
-                </span>
-                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                <span className="text-sm text-muted-foreground">satisfied</span>
               </div>
             </div>
             {analytics.avg_waiting_time && (
@@ -222,17 +213,9 @@ export default function DriverProfilePage() {
                       </div>
                     </div>
                     <div>
-                      <span className="text-muted-foreground">Arrival:</span>
+                      <span className="text-muted-foreground">Speed Satisfied:</span>
                       <div className="flex items-center gap-1">
-                        <span className="font-medium">{review.arrival_time_rating}/5</span>
-                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Speed:</span>
-                      <div className="flex items-center gap-1">
-                        <span className="font-medium">{review.ride_speed_rating}/5</span>
-                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                        <span className="font-medium">{review.ride_speed_satisfied ? 'Yes' : 'No'}</span>
                       </div>
                     </div>
                     <div>

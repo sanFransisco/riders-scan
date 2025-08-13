@@ -24,8 +24,7 @@ export interface Review {
   driver_id: string;
   overall_rating: number;
   pleasantness_rating: number;
-  arrival_time_rating: number;
-  ride_speed_rating: number;
+  ride_speed_satisfied: boolean;
   was_on_time: boolean;
   waiting_time_minutes?: number;
   price_fair: boolean;
@@ -42,8 +41,7 @@ export interface DriverAnalytics {
   total_reviews: number;
   avg_overall: number;
   avg_pleasantness: number;
-  avg_arrival_time: number;
-  avg_ride_speed: number;
+  ride_speed_satisfied_percentage: number;
   on_time_percentage: number;
   price_fair_percentage: number;
   avg_waiting_time?: number;
@@ -64,6 +62,10 @@ export async function initDatabase() {
   try {
     const client = await pool.connect()
     
+    // Drop existing tables if they exist
+    await client.query(`DROP TABLE IF EXISTS reviews CASCADE`)
+    await client.query(`DROP TABLE IF EXISTS drivers CASCADE`)
+    
     // Create drivers table
     await client.query(`
       CREATE TABLE IF NOT EXISTS drivers (
@@ -81,8 +83,7 @@ export async function initDatabase() {
         driver_id UUID REFERENCES drivers(id) ON DELETE CASCADE,
         overall_rating INTEGER CHECK (1 <= overall_rating AND overall_rating <= 5),
         pleasantness_rating INTEGER CHECK (1 <= pleasantness_rating AND pleasantness_rating <= 5),
-        arrival_time_rating INTEGER CHECK (1 <= arrival_time_rating AND arrival_time_rating <= 5),
-        ride_speed_rating INTEGER CHECK (1 <= ride_speed_rating AND ride_speed_rating <= 5),
+        ride_speed_satisfied BOOLEAN NOT NULL,
         was_on_time BOOLEAN NOT NULL,
         waiting_time_minutes INTEGER CHECK (waiting_time_minutes > 0),
         price_fair BOOLEAN NOT NULL,
@@ -117,8 +118,7 @@ export async function getDriverAnalytics(driverId: string): Promise<DriverAnalyt
         COUNT(r.id) as total_reviews,
         ROUND(AVG(r.overall_rating), 1) as avg_overall,
         ROUND(AVG(r.pleasantness_rating), 1) as avg_pleasantness,
-        ROUND(AVG(r.arrival_time_rating), 1) as avg_arrival_time,
-        ROUND(AVG(r.ride_speed_rating), 1) as avg_ride_speed,
+        ROUND((COUNT(CASE WHEN r.ride_speed_satisfied THEN 1 END) * 100.0 / COUNT(*)), 1) as ride_speed_satisfied_percentage,
         ROUND((COUNT(CASE WHEN r.was_on_time THEN 1 END) * 100.0 / COUNT(*)), 1) as on_time_percentage,
         ROUND((COUNT(CASE WHEN r.price_fair THEN 1 END) * 100.0 / COUNT(*)), 1) as price_fair_percentage,
         ROUND(AVG(r.waiting_time_minutes) FILTER (WHERE r.was_on_time = false), 1) as avg_waiting_time,
@@ -158,8 +158,7 @@ export async function searchDrivers(query: string): Promise<DriverAnalytics[]> {
         COUNT(r.id) as total_reviews,
         ROUND(AVG(r.overall_rating), 1) as avg_overall,
         ROUND(AVG(r.pleasantness_rating), 1) as avg_pleasantness,
-        ROUND(AVG(r.arrival_time_rating), 1) as avg_arrival_time,
-        ROUND(AVG(r.ride_speed_rating), 1) as avg_ride_speed,
+        ROUND((COUNT(CASE WHEN r.ride_speed_satisfied THEN 1 END) * 100.0 / COUNT(*)), 1) as ride_speed_satisfied_percentage,
         ROUND((COUNT(CASE WHEN r.was_on_time THEN 1 END) * 100.0 / COUNT(*)), 1) as on_time_percentage,
         ROUND((COUNT(CASE WHEN r.price_fair THEN 1 END) * 100.0 / COUNT(*)), 1) as price_fair_percentage,
         ROUND(AVG(r.waiting_time_minutes) FILTER (WHERE r.was_on_time = false), 1) as avg_waiting_time,
@@ -263,18 +262,17 @@ export async function createReview(reviewData: Omit<Review, 'id' | 'created_at'>
     const client = await pool.connect()
     const result = await client.query(`
       INSERT INTO reviews (
-        driver_id, overall_rating, pleasantness_rating, arrival_time_rating,
-        ride_speed_rating, was_on_time, waiting_time_minutes, price_fair,
+        driver_id, overall_rating, pleasantness_rating, ride_speed_satisfied,
+        was_on_time, waiting_time_minutes, price_fair,
         comment, ride_city, ride_date
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING *
     `, [
       reviewData.driver_id,
       reviewData.overall_rating,
       reviewData.pleasantness_rating,
-      reviewData.arrival_time_rating,
-      reviewData.ride_speed_rating,
+      reviewData.ride_speed_satisfied,
       reviewData.was_on_time,
       reviewData.waiting_time_minutes,
       reviewData.price_fair,

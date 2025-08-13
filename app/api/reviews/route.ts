@@ -9,8 +9,7 @@ export async function POST(request: NextRequest) {
       licensePlate,
       overallRating,
       pleasantnessRating,
-      arrivalTimeRating,
-      rideSpeedRating,
+      rideSpeedSatisfied,
       wasOnTime,
       waitingTimeMinutes,
       priceFair,
@@ -25,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate ratings
-    const ratings = [overallRating, pleasantnessRating, arrivalTimeRating, rideSpeedRating]
+    const ratings = [overallRating, pleasantnessRating]
     for (const rating of ratings) {
       if (rating && (rating < 1 || rating > 5)) {
         return NextResponse.json({ error: 'Ratings must be between 1 and 5' }, { status: 400 })
@@ -40,8 +39,7 @@ export async function POST(request: NextRequest) {
       driver_id: driver.id,
       overall_rating: overallRating,
       pleasantness_rating: pleasantnessRating,
-      arrival_time_rating: arrivalTimeRating,
-      ride_speed_rating: rideSpeedRating,
+      ride_speed_satisfied: rideSpeedSatisfied,
       was_on_time: wasOnTime,
       waiting_time_minutes: wasOnTime ? undefined : waitingTimeMinutes,
       price_fair: priceFair,
