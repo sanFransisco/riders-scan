@@ -15,7 +15,7 @@ export const serverAuthOptions = {
     }),
   ],
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account, profile }: { user: any; account: any; profile: any }) {
       if (account?.provider === 'google') {
         try {
           // Store or update user in database
@@ -48,7 +48,7 @@ export const serverAuthOptions = {
       }
       return true
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: any; token: any }) {
       if (session.user?.email) {
         try {
           // Get user data from database
@@ -87,7 +87,7 @@ export const authOptions = {
     }),
   ],
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account, profile }: { user: any; account: any; profile: any }) {
       if (account?.provider === 'google') {
         try {
           // Store or update user in database
@@ -120,7 +120,7 @@ export const authOptions = {
       }
       return true
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: any; token: any }) {
       if (session.user?.email) {
         try {
           // Get user data from database
