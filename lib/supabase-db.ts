@@ -104,6 +104,13 @@ export async function initDatabase() {
     
     // Complete database setup with role-based scopes
     const setupQueries = [
+      // 0. Create schema version table
+      `CREATE TABLE IF NOT EXISTS schema_version (
+        id INTEGER PRIMARY KEY DEFAULT 1,
+        version INTEGER NOT NULL DEFAULT 1,
+        updated_at TIMESTAMP DEFAULT NOW()
+      )`,
+      
       // 1. Create users table first (no dependencies)
       `CREATE TABLE IF NOT EXISTS users (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -132,11 +139,8 @@ export async function initDatabase() {
         updated_at TIMESTAMP DEFAULT NOW()
       )`,
       
-      // 4. Drop existing reviews table if it exists (to recreate with proper structure)
-      `DROP TABLE IF EXISTS reviews CASCADE`,
-      
-      // 5. Create reviews table with all required columns and foreign keys
-      `CREATE TABLE reviews (
+      // 4. Create reviews table with all required columns and foreign keys (if not exists)
+      `CREATE TABLE IF NOT EXISTS reviews (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         driver_id UUID REFERENCES drivers(id) ON DELETE CASCADE,
         user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -152,7 +156,7 @@ export async function initDatabase() {
         updated_at TIMESTAMP DEFAULT NOW()
       )`,
       
-      // 6. Insert default role scopes
+      // 5. Insert default role scopes
       `INSERT INTO role_scopes (role_name, scopes, description) VALUES
         ('user', ARRAY['read:reviews', 'create:reviews', 'update:own_reviews', 'delete:own_reviews'], 'Regular user permissions'),
         ('moderator', ARRAY['read:reviews', 'create:reviews', 'update:own_reviews', 'delete:own_reviews', 'delete:any_reviews', 'read:users'], 'Content moderator permissions'),
@@ -296,6 +300,35 @@ export async function initDatabase() {
     // Execute all setup queries
     for (const query of setupQueries) {
       await client.query(query)
+    }
+
+    // Check current schema version
+    const versionResult = await client.query('SELECT version FROM schema_version WHERE id = 1')
+    const currentVersion = versionResult.rows.length > 0 ? versionResult.rows[0].version : 0
+    
+    console.log(`Current schema version: ${currentVersion}`)
+    
+    // Apply migrations if needed
+    if (currentVersion < 1) {
+      // Version 1: Initial setup (already done above)
+      await client.query('INSERT INTO schema_version (id, version) VALUES (1, 1) ON CONFLICT (id) DO UPDATE SET version = 1, updated_at = NOW()')
+      console.log('✅ Applied migration to version 1')
+    }
+    
+    if (currentVersion < 2) {
+      // Version 2: Fix pleasantness_rating constraint
+      await client.query(`
+        DO $$ 
+        BEGIN
+          -- Drop old constraint if exists
+          ALTER TABLE reviews DROP CONSTRAINT IF EXISTS reviews_pleasantness_rating_check;
+          -- Add new constraint
+          ALTER TABLE reviews ADD CONSTRAINT reviews_pleasantness_rating_check 
+            CHECK (pleasantness_rating IS NULL OR (pleasantness_rating >= 1 AND pleasantness_rating <= 5));
+        END $$;
+      `)
+      await client.query('UPDATE schema_version SET version = 2, updated_at = NOW() WHERE id = 1')
+      console.log('✅ Applied migration to version 2')
     }
 
     client.release()

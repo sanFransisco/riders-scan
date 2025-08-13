@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
-import { serverAuthOptions } from '@/app/api/auth/[...nextauth]/route'
+import { serverAuthOptions } from '@/lib/auth-config'
 import { pool } from '@/lib/supabase-db'
 
 export async function GET(request: NextRequest) {
