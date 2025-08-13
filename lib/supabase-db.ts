@@ -106,6 +106,21 @@ export async function initDatabase() {
     // Drop existing tables if they exist
     await client.query(`DROP TABLE IF EXISTS reviews CASCADE`)
     await client.query(`DROP TABLE IF EXISTS drivers CASCADE`)
+    await client.query(`DROP TABLE IF EXISTS users CASCADE`)
+    
+    // Create users table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        email VARCHAR NOT NULL UNIQUE,
+        name VARCHAR,
+        image VARCHAR,
+        provider VARCHAR DEFAULT 'google',
+        role VARCHAR DEFAULT 'user',
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `)
     
     // Create drivers table
     await client.query(`
@@ -122,6 +137,7 @@ export async function initDatabase() {
       CREATE TABLE IF NOT EXISTS reviews (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         driver_id UUID REFERENCES drivers(id) ON DELETE CASCADE,
+        user_id UUID REFERENCES users(id) ON DELETE SET NULL,
         overall_rating INTEGER CHECK (1 <= overall_rating AND overall_rating <= 5),
         pleasantness_rating INTEGER CHECK (1 <= pleasantness_rating AND pleasantness_rating <= 5),
         ride_speed_satisfied BOOLEAN NOT NULL,
@@ -301,6 +317,62 @@ export async function createOrFindDriver(fullName: string, licensePlate: string)
     return result.rows[0] as Driver
   } catch (error) {
     console.error('Error creating/finding driver:', error)
+    throw error
+  }
+}
+
+// Delete review by ID
+export async function deleteReview(reviewId: string): Promise<boolean> {
+  if (!isDatabaseAvailable()) {
+    throw new Error('Database not configured. Please set POSTGRES_URL environment variable.');
+  }
+
+  try {
+    const client = await pool.connect()
+    
+    const result = await client.query(
+      'DELETE FROM reviews WHERE id = $1 RETURNING id',
+      [reviewId]
+    )
+
+    client.release()
+    
+    if (result.rows.length > 0) {
+      console.log(`Review ${reviewId} deleted successfully`)
+      return true
+    } else {
+      console.log(`Review ${reviewId} not found`)
+      return false
+    }
+  } catch (error) {
+    console.error('Error deleting review:', error)
+    throw error
+  }
+}
+
+// Get review by ID
+export async function getReviewById(reviewId: string): Promise<Review | null> {
+  if (!isDatabaseAvailable()) {
+    throw new Error('Database not configured. Please set POSTGRES_URL environment variable.');
+  }
+
+  try {
+    const client = await pool.connect()
+    
+    const result = await client.query(
+      'SELECT * FROM reviews WHERE id = $1',
+      [reviewId]
+    )
+
+    client.release()
+    
+    if (result.rows.length > 0) {
+      return result.rows[0] as Review
+    } else {
+      return null
+    }
+  } catch (error) {
+    console.error('Error getting review:', error)
     throw error
   }
 }
