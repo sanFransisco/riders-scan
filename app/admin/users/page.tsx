@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 
 interface User {
   id: string
@@ -13,6 +14,7 @@ interface User {
 
 export default function AdminUsersPage() {
   const { data: session, status } = useSession()
+  const router = useRouter()
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState<string | null>(null)
@@ -84,8 +86,20 @@ export default function AdminUsersPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">User Management</h1>
-        <p className="text-gray-600">Manage user roles and permissions</p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold">User Management</h1>
+            <p className="text-gray-600">Manage user roles and permissions</p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => router.push('/admin/reviews')}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            >
+              Manage Reviews
+            </button>
+          </div>
+        </div>
       </div>
 
       {loading ? (
