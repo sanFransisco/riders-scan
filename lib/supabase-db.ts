@@ -50,7 +50,13 @@ export interface DriverAnalytics {
 
 // Check if database is available
 function isDatabaseAvailable() {
-  return process.env.POSTGRES_URL;
+  const hasUrl = !!process.env.POSTGRES_URL;
+  console.log('Database availability check:', { 
+    hasUrl, 
+    urlLength: process.env.POSTGRES_URL?.length || 0,
+    nodeEnv: process.env.NODE_ENV 
+  });
+  return hasUrl;
 }
 
 // Initialize database tables
