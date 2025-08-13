@@ -1,15 +1,14 @@
 import { Pool } from 'pg'
 
 // Create a connection pool
-const pool = new Pool({
+export const pool = new Pool({
   connectionString: process.env.POSTGRES_URL,
   ssl: {
-    rejectUnauthorized: false,
-    checkServerIdentity: () => undefined,
-    ca: undefined,
-    cert: undefined,
-    key: undefined
-  }
+    rejectUnauthorized: false
+  },
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
 })
 
 export interface Driver {
@@ -155,7 +154,10 @@ export async function searchDrivers(query: string): Promise<DriverAnalytics[]> {
   }
 
   try {
+    console.log('Attempting to connect to database for search...')
     const client = await pool.connect()
+    console.log('Database connection successful for search')
+    
     const result = await client.query(`
       SELECT 
         d.id,
@@ -177,9 +179,18 @@ export async function searchDrivers(query: string): Promise<DriverAnalytics[]> {
     `, [`%${query}%`])
 
     client.release()
+    console.log(`Search completed successfully, found ${result.rows.length} results`)
     return result.rows as DriverAnalytics[]
   } catch (error) {
     console.error('Error searching drivers:', error)
+    if (error instanceof Error) {
+      console.error('Error details:', {
+        message: error.message,
+        code: (error as any).code,
+        detail: (error as any).detail,
+        hint: (error as any).hint
+      })
+    }
     throw error
   }
 }
