@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { pool } from '@/lib/supabase-db'
 
 export async function GET(request: NextRequest) {
   try {
     // Check authentication
-    const session = await getServerSession()
+    const session = await getServerSession(authOptions)
+    console.log('Admin users API - Session:', session)
     
     if (!session || !session.user?.id) {
+      console.log('Admin users API - No session or user ID')
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
@@ -18,7 +21,7 @@ export async function GET(request: NextRequest) {
       [session.user.id]
     )
     
-    if (adminCheck.rows.length === 0 || adminCheck.rows[0].role !== 'admin') {
+    if (adminCheck.rows.length === 0 || !adminCheck.rows[0].role.includes('admin')) {
       client.release()
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }

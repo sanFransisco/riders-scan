@@ -18,10 +18,10 @@ export default function AdminUsersPage() {
   const [updating, setUpdating] = useState<string | null>(null)
 
   useEffect(() => {
-    if (session?.user?.role === 'admin') {
+    if (session?.user?.role === 'admin' && status === 'authenticated') {
       fetchUsers()
     }
-  }, [session])
+  }, [session, status])
 
   const fetchUsers = async () => {
     try {
@@ -29,6 +29,10 @@ export default function AdminUsersPage() {
       if (response.ok) {
         const data = await response.json()
         setUsers(data.users)
+      } else {
+        console.error('Failed to fetch users:', response.status, response.statusText)
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Error details:', errorData)
       }
     } catch (error) {
       console.error('Error fetching users:', error)

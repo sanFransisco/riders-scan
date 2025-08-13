@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { pool } from '@/lib/supabase-db'
 
 export async function PUT(
@@ -8,7 +9,7 @@ export async function PUT(
 ) {
   try {
     // Check authentication
-    const session = await getServerSession()
+    const session = await getServerSession(authOptions)
     
     if (!session || !session.user?.id) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
@@ -21,7 +22,7 @@ export async function PUT(
       [session.user.id]
     )
     
-    if (adminCheck.rows.length === 0 || adminCheck.rows[0].role !== 'admin') {
+    if (adminCheck.rows.length === 0 || !adminCheck.rows[0].role.includes('admin')) {
       client.release()
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
@@ -38,10 +39,10 @@ export async function PUT(
       }, { status: 400 })
     }
 
-    // Update user role
+    // Update user role - store as array
     const result = await client.query(
       'UPDATE users SET role = $1, updated_at = NOW() WHERE id = $2 RETURNING id, email, role',
-      [role, userId]
+      [ARRAY[role], userId]
     )
 
     client.release()
@@ -69,7 +70,7 @@ export async function GET(
 ) {
   try {
     // Check authentication
-    const session = await getServerSession()
+    const session = await getServerSession(authOptions)
     
     if (!session || !session.user?.id) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
@@ -82,7 +83,7 @@ export async function GET(
       [session.user.id]
     )
     
-    if (adminCheck.rows.length === 0 || adminCheck.rows[0].role !== 'admin') {
+    if (adminCheck.rows.length === 0 || !adminCheck.rows[0].role.includes('admin')) {
       client.release()
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }

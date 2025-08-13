@@ -1,8 +1,12 @@
 import NextAuth from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 import { pool } from '@/lib/supabase-db'
+import { ensureDatabaseInitialized } from '@/lib/startup'
 
-const handler = NextAuth({
+// Initialize database on startup
+ensureDatabaseInitialized()
+
+export const authOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -25,14 +29,14 @@ const handler = NextAuth({
           if (existingUser.rows.length === 0) {
             // Create new user
             await client.query(
-              'INSERT INTO users (email, name, image, provider) VALUES ($1, $2, $3, $4)',
-              [user.email, user.name, user.image, 'google']
+              'INSERT INTO users (email, name, role) VALUES ($1, $2, $3)',
+              [user.email, user.name, ARRAY['user']]
             )
           } else {
             // Update existing user
             await client.query(
-              'UPDATE users SET name = $1, image = $2, updated_at = NOW() WHERE email = $3',
-              [user.name, user.image, user.email]
+              'UPDATE users SET name = $1, updated_at = NOW() WHERE email = $2',
+              [user.name, user.email]
             )
           }
 
@@ -49,7 +53,7 @@ const handler = NextAuth({
           // Get user data from database
           const client = await pool.connect()
           const userResult = await client.query(
-            'SELECT id, email, name, image, role FROM users WHERE email = $1',
+            'SELECT id, email, name, role FROM users WHERE email = $1',
             [session.user.email]
           )
           client.release()
@@ -57,7 +61,9 @@ const handler = NextAuth({
           if (userResult.rows.length > 0) {
             const userData = userResult.rows[0]
             session.user.id = userData.id
-            session.user.role = userData.role || 'user'
+            // Handle role as array - check if user has admin role
+            const roles = userData.role || ['user']
+            session.user.role = roles.includes('admin') ? 'admin' : 'user'
           }
         } catch (error) {
           console.error('Error getting user session data:', error)
@@ -73,6 +79,8 @@ const handler = NextAuth({
   session: {
     strategy: 'jwt',
   },
-})
+}
+
+const handler = NextAuth(authOptions)
 
 export { handler as GET, handler as POST }

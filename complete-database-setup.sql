@@ -1,7 +1,8 @@
--- Complete Database Setup for Riders Scan with Role Scopes
+-- Complete Database Setup for Riders Scan
 -- Run this in Supabase SQL Editor
+-- This script creates everything in the correct order
 
--- 1. Create users table if it doesn't exist
+-- 1. Create users table first (no dependencies)
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email TEXT UNIQUE NOT NULL,
@@ -11,7 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- 2. Create role_scopes table for defining what each role can do
+-- 2. Create role_scopes table (no dependencies)
 CREATE TABLE IF NOT EXISTS role_scopes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   role_name TEXT UNIQUE NOT NULL,
@@ -20,7 +21,7 @@ CREATE TABLE IF NOT EXISTS role_scopes (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
--- 3. Create drivers table if it doesn't exist
+-- 3. Create drivers table (no dependencies)
 CREATE TABLE IF NOT EXISTS drivers (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   full_name TEXT NOT NULL,
@@ -29,8 +30,11 @@ CREATE TABLE IF NOT EXISTS drivers (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- 4. Create reviews table if it doesn't exist
-CREATE TABLE IF NOT EXISTS reviews (
+-- 4. Drop existing reviews table if it exists (to recreate with proper structure)
+DROP TABLE IF EXISTS reviews CASCADE;
+
+-- 5. Create reviews table with all required columns and foreign keys
+CREATE TABLE reviews (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   driver_id UUID REFERENCES drivers(id) ON DELETE CASCADE,
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -47,7 +51,7 @@ CREATE TABLE IF NOT EXISTS reviews (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- 5. Insert default role scopes
+-- 6. Insert default role scopes
 INSERT INTO role_scopes (role_name, scopes, description) VALUES
   ('user', ARRAY['read:reviews', 'create:reviews', 'update:own_reviews', 'delete:own_reviews'], 'Regular user permissions'),
   ('moderator', ARRAY['read:reviews', 'create:reviews', 'update:own_reviews', 'delete:own_reviews', 'delete:any_reviews', 'read:users'], 'Content moderator permissions'),
@@ -56,13 +60,13 @@ ON CONFLICT (role_name) DO UPDATE SET
   scopes = EXCLUDED.scopes,
   description = EXCLUDED.description;
 
--- 6. Create indexes for better performance
+-- 7. Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_drivers_license_plate ON drivers(license_plate);
 CREATE INDEX IF NOT EXISTS idx_reviews_driver_id ON reviews(driver_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_user_id ON reviews(user_id);
 
--- 7. Insert yourself as admin (replace with your email)
+-- 8. Insert yourself as admin (replace with your email)
 INSERT INTO users (email, name, role) 
 VALUES ('yalib@jfrog.com', 'Yali', ARRAY['user', 'admin'])
 ON CONFLICT (email) 
@@ -70,7 +74,7 @@ DO UPDATE SET
   role = ARRAY['user', 'admin'],
   updated_at = NOW();
 
--- 8. Create a function to update updated_at timestamp
+-- 9. Create a function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -79,17 +83,20 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- 9. Create triggers to automatically update updated_at
+-- 10. Create triggers to automatically update updated_at
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_drivers_updated_at ON drivers;
 CREATE TRIGGER update_drivers_updated_at BEFORE UPDATE ON drivers
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_reviews_updated_at ON reviews;
 CREATE TRIGGER update_reviews_updated_at BEFORE UPDATE ON reviews
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- 10. Create function to check if user has scope
+-- 11. Create function to check if user has scope
 CREATE OR REPLACE FUNCTION user_has_scope(user_id UUID, required_scope TEXT)
 RETURNS BOOLEAN AS $$
 BEGIN
@@ -103,13 +110,25 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 11. Enable Row Level Security (RLS)
+-- 12. Enable Row Level Security (RLS)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE drivers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
 ALTER TABLE role_scopes ENABLE ROW LEVEL SECURITY;
 
--- 12. Create RLS policies
+-- 13. Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can read own data" ON users;
+DROP POLICY IF EXISTS "Users can update own data" ON users;
+DROP POLICY IF EXISTS "Anyone can read drivers" ON drivers;
+DROP POLICY IF EXISTS "Anyone can read reviews" ON reviews;
+DROP POLICY IF EXISTS "Authenticated users can create reviews" ON reviews;
+DROP POLICY IF EXISTS "Users can manage own reviews" ON reviews;
+DROP POLICY IF EXISTS "Admins can manage all users" ON users;
+DROP POLICY IF EXISTS "Admins can manage all drivers" ON drivers;
+DROP POLICY IF EXISTS "Admins can manage all reviews" ON reviews;
+DROP POLICY IF EXISTS "Only admins can manage role scopes" ON role_scopes;
+
+-- 14. Create RLS policies
 -- Users can read their own data
 CREATE POLICY "Users can read own data" ON users
     FOR SELECT USING (auth.uid()::text = id::text);
@@ -172,7 +191,7 @@ CREATE POLICY "Only admins can manage role scopes" ON role_scopes
         )
     );
 
--- 13. Grant necessary permissions
+-- 15. Grant necessary permissions
 GRANT ALL ON users TO authenticated;
 GRANT ALL ON drivers TO authenticated;
 GRANT ALL ON reviews TO authenticated;
@@ -180,5 +199,27 @@ GRANT ALL ON role_scopes TO authenticated;
 GRANT EXECUTE ON FUNCTION user_has_scope(UUID, TEXT) TO authenticated;
 GRANT USAGE ON SCHEMA public TO authenticated;
 
+-- 16. Show final table structures
+SELECT '=== USERS TABLE ===' as info;
+SELECT column_name, data_type, is_nullable 
+FROM information_schema.columns 
+WHERE table_name = 'users' 
+AND table_schema = 'public'
+ORDER BY ordinal_position;
+
+SELECT '=== DRIVERS TABLE ===' as info;
+SELECT column_name, data_type, is_nullable 
+FROM information_schema.columns 
+WHERE table_name = 'drivers' 
+AND table_schema = 'public'
+ORDER BY ordinal_position;
+
+SELECT '=== REVIEWS TABLE ===' as info;
+SELECT column_name, data_type, is_nullable 
+FROM information_schema.columns 
+WHERE table_name = 'reviews' 
+AND table_schema = 'public'
+ORDER BY ordinal_position;
+
 -- Success message
-SELECT 'Database setup completed successfully! You are now an admin with role-based scopes.' as message;
+SELECT '🎉 Database setup completed successfully! You are now an admin with role-based scopes.' as message;
