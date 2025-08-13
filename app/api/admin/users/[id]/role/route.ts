@@ -41,8 +41,8 @@ export async function PUT(
 
     // Update user role - store as array
     const result = await client.query(
-      'UPDATE users SET role = $1, updated_at = NOW() WHERE id = $2 RETURNING id, email, role',
-      [ARRAY[role], userId]
+      'UPDATE users SET role = ARRAY[$1], updated_at = NOW() WHERE id = $2 RETURNING id, email, role',
+      [role, userId]
     )
 
     client.release()
