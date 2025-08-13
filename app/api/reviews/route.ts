@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createOrFindDriver, createReview } from '@/lib/db'
+import { createOrFindDriver, createReview } from '@/lib/supabase-db'
 
 export async function POST(request: NextRequest) {
   try {

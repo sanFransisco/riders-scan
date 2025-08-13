@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { searchDrivers } from '@/lib/db'
+import { searchDrivers } from '@/lib/supabase-db'
 
 export async function GET(request: NextRequest) {
   try {

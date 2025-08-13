@@ -6,7 +6,7 @@ import { Search, Star, Clock, DollarSign, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { DriverAnalytics } from '@/lib/db'
+import { DriverAnalytics } from '@/lib/supabase-db'
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('')

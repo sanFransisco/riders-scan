@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDriverAnalytics, getDriverReviews } from '@/lib/db'
+import { getDriverAnalytics, getDriverReviews } from '@/lib/supabase-db'
 
 export async function GET(
   request: NextRequest,

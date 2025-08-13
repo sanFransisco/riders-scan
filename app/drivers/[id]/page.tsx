@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { Star, Clock, DollarSign, MapPin, Plus, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { DriverAnalytics, Review } from '@/lib/db'
+import { DriverAnalytics, Review } from '@/lib/supabase-db'
 import { formatDate, formatRating, getRatingColor, getPercentageColor } from '@/lib/utils'
 
 export default function DriverProfilePage() {

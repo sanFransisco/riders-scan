@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { getDriverById } from '@/lib/db'
+import { getDriverById } from '@/lib/supabase-db'
 
 interface RatingInputProps {
   label: string
@@ -66,6 +66,7 @@ export default function CreateReviewPage() {
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
   const [driver, setDriver] = useState<any>(null)
 
   useEffect(() => {
@@ -120,9 +121,14 @@ export default function CreateReviewPage() {
         throw new Error(errorData.error || 'Failed to create review')
       }
 
-      // Redirect to driver profile
-      const driverId = driver?.id || 'new'
-      router.push(`/drivers/${driverId}`)
+      // Show success message briefly before redirecting
+      setSuccess(true)
+      setTimeout(() => {
+        const successParams = new URLSearchParams()
+        if (driver?.id) successParams.set('driverId', driver.id)
+        if (driver?.full_name) successParams.set('driverName', driver.full_name)
+        router.push(`/reviews/success?${successParams.toString()}`)
+      }, 1500)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create review')
     } finally {
@@ -328,12 +334,27 @@ export default function CreateReviewPage() {
               </div>
             )}
 
+            {/* Success Message */}
+            {success && (
+              <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-md">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <span className="text-sm text-green-600">
+                  Review submitted successfully! Redirecting to thank you page...
+                </span>
+              </div>
+            )}
+
             {/* Submit Button */}
-            <Button type="submit" disabled={loading} className="w-full">
+            <Button type="submit" disabled={loading || success} className="w-full">
               {loading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                   Creating Review...
+                </>
+              ) : success ? (
+                <>
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Review Submitted!
                 </>
               ) : (
                 <>
