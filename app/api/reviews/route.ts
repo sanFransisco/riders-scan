@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     const review = await createReview({
       driver_id: driver.id,
       overall_rating: overallRating,
-      pleasantness_rating: pleasantnessRating,
+      pleasantness_rating: pleasantnessRating > 0 ? pleasantnessRating : undefined,
       ride_speed_satisfied: rideSpeedSatisfied,
       was_on_time: wasOnTime,
       waiting_time_minutes: wasOnTime ? undefined : waitingTimeMinutes,
