@@ -248,9 +248,9 @@ export default function DriverProfilePage() {
                     )}
                   </div>
 
-                  {review.comment && (
+                  {review.review_text && (
                     <div className="pt-2 border-t">
-                      <p className="text-sm">{review.comment}</p>
+                      <p className="text-sm">{review.review_text}</p>
                     </div>
                   )}
                 </CardContent>

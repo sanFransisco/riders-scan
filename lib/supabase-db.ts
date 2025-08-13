@@ -63,9 +63,8 @@ export interface Review {
   was_on_time: boolean;
   waiting_time_minutes?: number;
   price_fair: boolean;
-  comment?: string;
+  review_text?: string;
   ride_city?: string;
-  ride_date: Date;
   created_at: Date;
 }
 
@@ -366,7 +365,6 @@ export async function searchDrivers(query: string): Promise<DriverAnalytics[]> {
         d.license_plate,
         COUNT(r.id) as total_reviews,
         ROUND(AVG(r.overall_rating), 1) as avg_overall,
-        ROUND(AVG(r.honesty_rating), 1) as avg_honesty,
         ROUND(AVG(r.pleasantness_rating), 1) as avg_pleasantness,
         ROUND((COUNT(CASE WHEN r.ride_speed_satisfied THEN 1 END) * 100.0 / COUNT(*)), 1) as ride_speed_satisfied_percentage,
         ROUND((COUNT(CASE WHEN r.was_on_time THEN 1 END) * 100.0 / COUNT(*)), 1) as on_time_percentage,
@@ -539,7 +537,7 @@ export async function createReview(reviewData: Omit<Review, 'id' | 'created_at'>
       INSERT INTO reviews (
         driver_id, overall_rating, pleasantness_rating, ride_speed_satisfied,
         was_on_time, waiting_time_minutes, price_fair,
-        comment, ride_city, ride_date
+        review_text, ride_city, created_at
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING *
@@ -551,9 +549,9 @@ export async function createReview(reviewData: Omit<Review, 'id' | 'created_at'>
       reviewData.was_on_time,
       reviewData.waiting_time_minutes,
       reviewData.price_fair,
-      reviewData.comment,
+      reviewData.review_text,
       reviewData.ride_city,
-      reviewData.ride_date
+      new Date()
     ])
 
     client.release()
