@@ -1,15 +1,33 @@
 import { Pool } from 'pg'
 
 // Create a connection pool
-export const pool = new Pool({
-  connectionString: process.env.POSTGRES_URL,
-  ssl: {
-    rejectUnauthorized: false
-  },
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-})
+const getConnectionConfig = () => {
+  const connectionString = process.env.POSTGRES_URL;
+  
+  if (process.env.NODE_ENV === 'production') {
+    // For production, modify the connection string to disable SSL verification
+    const modifiedUrl = connectionString?.replace('?', '?sslmode=no-verify&') || connectionString;
+    return {
+      connectionString: modifiedUrl,
+      ssl: false,
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000,
+    };
+  }
+  
+  return {
+    connectionString,
+    ssl: {
+      rejectUnauthorized: false
+    },
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
+  };
+};
+
+export const pool = new Pool(getConnectionConfig())
 
 export interface Driver {
   id: string;
