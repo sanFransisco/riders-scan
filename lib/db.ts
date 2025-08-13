@@ -215,7 +215,7 @@ export async function createReview(reviewData: Omit<Review, 'id' | 'created_at'>
         ${reviewData.driver_id}, ${reviewData.overall_rating}, ${reviewData.pleasantness_rating},
         ${reviewData.arrival_time_rating}, ${reviewData.ride_speed_rating}, ${reviewData.was_on_time},
         ${reviewData.waiting_time_minutes}, ${reviewData.price_fair}, ${reviewData.comment},
-        ${reviewData.ride_city}, ${reviewData.ride_date}
+        ${reviewData.ride_city}, ${reviewData.ride_date.toISOString().split('T')[0]}
       )
       RETURNING *
     `;
