@@ -1,33 +1,51 @@
 import { Pool } from 'pg'
 
 // Create a connection pool
-const getConnectionConfig = () => {
+// Create a connection pool with proper SSL handling for Supabase
+const createPool = () => {
   const connectionString = process.env.POSTGRES_URL;
   
-  if (process.env.NODE_ENV === 'production') {
-    // For production, modify the connection string to disable SSL verification
-    const modifiedUrl = connectionString?.replace('?', '?sslmode=no-verify&') || connectionString;
-    return {
-      connectionString: modifiedUrl,
-      ssl: false,
-      max: 20,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 2000,
-    };
+  if (!connectionString) {
+    throw new Error('POSTGRES_URL environment variable is not set');
   }
   
-  return {
-    connectionString,
-    ssl: {
+  // Parse the connection string to extract components
+  const url = new URL(connectionString);
+  
+  // For production, use a more permissive SSL configuration
+  const config = {
+    host: url.hostname,
+    port: parseInt(url.port),
+    database: url.pathname.slice(1), // Remove leading slash
+    user: url.username,
+    password: url.password,
+    ssl: process.env.NODE_ENV === 'production' ? {
+      rejectUnauthorized: false,
+      checkServerIdentity: () => undefined,
+      ca: undefined,
+      cert: undefined,
+      key: undefined
+    } : {
       rejectUnauthorized: false
     },
     max: 20,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 2000,
   };
+  
+  console.log('Creating pool with config:', {
+    host: config.host,
+    port: config.port,
+    database: config.database,
+    user: config.user,
+    ssl: !!config.ssl,
+    nodeEnv: process.env.NODE_ENV
+  });
+  
+  return new Pool(config);
 };
 
-export const pool = new Pool(getConnectionConfig())
+export const pool = createPool()
 
 export interface Driver {
   id: string;
