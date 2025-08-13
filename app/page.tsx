@@ -24,7 +24,9 @@ export default function HomePage() {
         const results = await response.json()
         setSearchResults(results)
       } else {
-        console.error('Search failed')
+        const errorData = await response.json()
+        console.error('Search failed:', errorData.error)
+        // You could show this error to the user
       }
     } catch (error) {
       console.error('Search error:', error)

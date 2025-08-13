@@ -14,6 +14,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(drivers)
   } catch (error) {
     console.error('Error searching drivers:', error)
+    
+    // Check if it's a database configuration error
+    if (error instanceof Error && error.message.includes('Database not configured')) {
+      return NextResponse.json({ 
+        error: 'Database not configured. Please set up your database environment variables.',
+        details: error.message 
+      }, { status: 503 })
+    }
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

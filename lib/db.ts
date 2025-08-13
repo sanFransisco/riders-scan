@@ -1,5 +1,10 @@
 import { sql } from '@vercel/postgres';
 
+// Check if database is available
+function isDatabaseAvailable() {
+  return process.env.POSTGRES_URL || (process.env.POSTGRES_HOST && process.env.POSTGRES_DATABASE);
+}
+
 export interface Driver {
   id: string;
   full_name: string;
@@ -40,6 +45,10 @@ export interface DriverAnalytics {
 
 // Initialize database tables
 export async function initDatabase() {
+  if (!isDatabaseAvailable()) {
+    throw new Error('Database not configured. Please set POSTGRES_URL or POSTGRES_HOST/DATABASE environment variables.');
+  }
+
   try {
     // Create drivers table
     await sql`
@@ -79,6 +88,10 @@ export async function initDatabase() {
 
 // Get driver analytics
 export async function getDriverAnalytics(driverId: string): Promise<DriverAnalytics | null> {
+  if (!isDatabaseAvailable()) {
+    throw new Error('Database not configured. Please set POSTGRES_URL or POSTGRES_HOST/DATABASE environment variables.');
+  }
+
   try {
     const result = await sql`
       SELECT 
@@ -113,6 +126,10 @@ export async function getDriverAnalytics(driverId: string): Promise<DriverAnalyt
 
 // Search drivers
 export async function searchDrivers(query: string): Promise<DriverAnalytics[]> {
+  if (!isDatabaseAvailable()) {
+    throw new Error('Database not configured. Please set POSTGRES_URL or POSTGRES_HOST/DATABASE environment variables.');
+  }
+
   try {
     const result = await sql`
       SELECT 
