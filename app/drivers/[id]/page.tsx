@@ -99,9 +99,9 @@ export default function DriverProfilePage() {
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-1 mb-2">
                 <Clock className="h-5 w-5 text-green-600" />
-                <span className={`text-2xl font-bold ${getPercentageColor(analytics.on_time_percentage || 0)}`}>
-                  {analytics.on_time_percentage || 0}%
-                </span>
+                                    <span className="text-2xl font-bold">
+                      {analytics.on_time_percentage || 0}%
+                    </span>
               </div>
               <p className="text-sm text-muted-foreground">On Time</p>
             </CardContent>
@@ -147,7 +147,7 @@ export default function DriverProfilePage() {
             <div className="flex items-center justify-between">
               <span>Ride Speed Satisfaction</span>
               <div className="flex items-center gap-2">
-                <span className={`font-medium ${getPercentageColor(analytics.ride_speed_satisfied_percentage || 0)}`}>
+                <span className="font-medium">
                   {analytics.ride_speed_satisfied_percentage || 0}%
                 </span>
                 <span className="text-sm text-muted-foreground">satisfied</span>

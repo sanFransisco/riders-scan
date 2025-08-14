@@ -67,7 +67,7 @@ export default function DriverOverlay({ driver, onClose }: DriverOverlayProps) {
 
               <Card>
                 <CardHeader className="text-center">
-                  <CardTitle className={`text-3xl font-bold ${getPercentageColor(driver.on_time_percentage)}`}>
+                  <CardTitle className="text-3xl font-bold">
                     {driver.on_time_percentage}%
                   </CardTitle>
                   <CardDescription className="flex items-center justify-center gap-2">
@@ -119,7 +119,7 @@ export default function DriverOverlay({ driver, onClose }: DriverOverlayProps) {
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center gap-2">
-                      <span className={`text-2xl font-bold ${getPercentageColor(driver.ride_speed_satisfied_percentage)}`}>
+                      <span className="text-2xl font-bold">
                         {driver.ride_speed_satisfied_percentage}%
                       </span>
                       <span className="text-muted-foreground">satisfied</span>
