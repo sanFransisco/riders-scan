@@ -12,11 +12,6 @@ export default async function LandingPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4">
       <div className="text-center max-w-2xl">
-        {/* Brand */}
-        <div className="mb-8">
-          <h1 className="text-lg text-black font-normal">Riders Scan</h1>
-        </div>
-
         {/* Main Headline */}
         <div className="mb-8">
           <h2 className="text-5xl font-bold text-black leading-tight">
