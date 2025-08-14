@@ -26,11 +26,8 @@ export default function RootLayout({
                 <div className="flex items-center justify-between">
                   <div>
                     <h1 className="text-2xl font-bold text-primary">
-                      🚗 Riders Scan
+                      Riders Scan
                     </h1>
-                    <p className="text-sm text-muted-foreground">
-                      Honest driver reviews for informed decisions
-                    </p>
                   </div>
                   <SignInButton />
                 </div>
