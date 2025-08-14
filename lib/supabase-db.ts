@@ -80,6 +80,7 @@ export interface DriverAnalytics {
   on_time_percentage: number;
   price_fair_percentage: number;
   avg_waiting_time?: number;
+  total_waiting_time?: number;
   service_cities: string[];
 }
 
@@ -375,6 +376,7 @@ export async function getDriverAnalytics(driverId: string): Promise<DriverAnalyt
         ROUND((COUNT(CASE WHEN r.was_on_time THEN 1 END) * 100.0 / COUNT(*)), 1) as on_time_percentage,
         ROUND((COUNT(CASE WHEN r.price_fair THEN 1 END) * 100.0 / COUNT(*)), 1) as price_fair_percentage,
         ROUND(AVG(r.waiting_time_minutes) FILTER (WHERE r.was_on_time = false), 1) as avg_waiting_time,
+        SUM(r.waiting_time_minutes) FILTER (WHERE r.was_on_time = false) as total_waiting_time,
         ARRAY_AGG(DISTINCT r.ride_city) FILTER (WHERE r.ride_city IS NOT NULL) as service_cities
       FROM drivers d
       LEFT JOIN reviews r ON d.id = r.driver_id
@@ -418,6 +420,7 @@ export async function searchDrivers(query: string): Promise<DriverAnalytics[]> {
         ROUND((COUNT(CASE WHEN r.was_on_time THEN 1 END) * 100.0 / COUNT(*)), 1) as on_time_percentage,
         ROUND((COUNT(CASE WHEN r.price_fair THEN 1 END) * 100.0 / COUNT(*)), 1) as price_fair_percentage,
         ROUND(AVG(r.waiting_time_minutes) FILTER (WHERE r.was_on_time = false), 1) as avg_waiting_time,
+        SUM(r.waiting_time_minutes) FILTER (WHERE r.was_on_time = false) as total_waiting_time,
         ARRAY_AGG(DISTINCT r.ride_city) FILTER (WHERE r.ride_city IS NOT NULL) as service_cities
       FROM drivers d
       LEFT JOIN reviews r ON d.id = r.driver_id

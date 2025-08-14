@@ -133,13 +133,21 @@ export default function DriverOverlay({ driver, onClose }: DriverOverlayProps) {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Clock className="h-5 w-5 text-orange-500" />
-                      Average Wait Time
+                      Wait Time
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl font-bold">{driver.avg_waiting_time}</span>
-                      <span className="text-muted-foreground">minutes</span>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Total:</span>
+                        <span className="text-lg font-bold">{driver.total_waiting_time || 0}</span>
+                        <span className="text-sm text-muted-foreground">minutes</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Average:</span>
+                        <span className="text-lg font-bold">{driver.avg_waiting_time}</span>
+                        <span className="text-sm text-muted-foreground">minutes</span>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
