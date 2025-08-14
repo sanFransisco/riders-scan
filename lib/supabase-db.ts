@@ -82,6 +82,12 @@ export interface DriverAnalytics {
   avg_waiting_time?: number;
   total_waiting_time?: number;
   service_cities: string[];
+  service_ratings?: {
+    Yango?: { rating: number; count: number };
+    Gett?: { rating: number; count: number };
+    Uber?: { rating: number; count: number };
+    Other?: { rating: number; count: number };
+  };
 }
 
 // Check if database is available
@@ -364,6 +370,8 @@ export async function getDriverAnalytics(driverId: string): Promise<DriverAnalyt
 
   try {
     const client = await pool.connect()
+    
+    // Get main analytics
     const result = await client.query(`
       SELECT 
         d.id,
@@ -384,13 +392,40 @@ export async function getDriverAnalytics(driverId: string): Promise<DriverAnalyt
       GROUP BY d.id, d.full_name, d.license_plate
     `, [driverId])
 
-    client.release()
-
     if (result.rows.length === 0) {
+      client.release()
       return null
     }
 
-    return result.rows[0] as DriverAnalytics
+    // Get service-specific ratings
+    const serviceRatingsResult = await client.query(`
+      SELECT 
+        r.service,
+        ROUND(AVG(r.overall_rating), 1) as rating,
+        COUNT(*) as count
+      FROM reviews r
+      WHERE r.driver_id = $1 AND r.service IS NOT NULL
+      GROUP BY r.service
+    `, [driverId])
+
+    client.release()
+
+    const analytics = result.rows[0] as DriverAnalytics
+    
+    // Process service ratings
+    const serviceRatings: any = {}
+    serviceRatingsResult.rows.forEach((row: any) => {
+      if (row.service && row.rating && row.count) {
+        serviceRatings[row.service] = {
+          rating: parseFloat(row.rating),
+          count: parseInt(row.count)
+        }
+      }
+    })
+    
+    analytics.service_ratings = serviceRatings
+
+    return analytics
   } catch (error) {
     console.error('Error getting driver analytics:', error)
     throw error

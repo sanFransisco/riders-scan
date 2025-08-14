@@ -52,6 +52,25 @@ export default function DriverOverlay({ driver, onClose }: DriverOverlayProps) {
                   <span className="text-muted-foreground">/ 5</span>
                 </div>
               )}
+              
+              {/* Service Ratings */}
+              {driver.service_ratings && Object.keys(driver.service_ratings).length > 0 && (
+                <div className="flex flex-wrap justify-center gap-3 mt-4">
+                  {Object.entries(driver.service_ratings).map(([service, data]) => (
+                    <div
+                      key={service}
+                      className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg"
+                    >
+                      <span className="text-sm font-medium text-gray-700">{service}</span>
+                      <div className="flex items-center gap-1">
+                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        <span className="text-sm font-bold">{data.rating}</span>
+                        <span className="text-xs text-gray-500">({data.count})</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Driver Stats */}
