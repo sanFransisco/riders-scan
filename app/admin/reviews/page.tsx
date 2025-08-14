@@ -21,6 +21,7 @@ interface Review {
   price_fair: boolean
   review_text?: string
   ride_city?: string
+  service?: string
   created_at: string
 }
 
@@ -87,6 +88,7 @@ export default function AdminReviewsPage() {
     review.driver_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     review.license_plate.toLowerCase().includes(searchTerm.toLowerCase()) ||
     review.ride_city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    review.service?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     review.review_text?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
@@ -175,17 +177,18 @@ export default function AdminReviewsPage() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-3 font-medium">Driver</th>
-                    <th className="text-left p-3 font-medium">Overall Rating</th>
-                    <th className="text-left p-3 font-medium">Pleasantness</th>
-                    <th className="text-left p-3 font-medium">Details</th>
-                    <th className="text-left p-3 font-medium">Location</th>
-                    <th className="text-left p-3 font-medium">Date</th>
-                    <th className="text-left p-3 font-medium">Actions</th>
-                  </tr>
-                </thead>
+                                 <thead>
+                   <tr className="border-b">
+                     <th className="text-left p-3 font-medium">Driver</th>
+                     <th className="text-left p-3 font-medium">Service</th>
+                     <th className="text-left p-3 font-medium">Overall Rating</th>
+                     <th className="text-left p-3 font-medium">Pleasantness</th>
+                     <th className="text-left p-3 font-medium">Details</th>
+                     <th className="text-left p-3 font-medium">Location</th>
+                     <th className="text-left p-3 font-medium">Date</th>
+                     <th className="text-left p-3 font-medium">Actions</th>
+                   </tr>
+                 </thead>
                 <tbody>
                   {filteredReviews.map((review) => (
                     <tr key={review.id} className="border-b hover:bg-gray-50">
@@ -194,10 +197,24 @@ export default function AdminReviewsPage() {
                           <div className="font-medium">{review.driver_name}</div>
                           <div className="text-sm text-gray-500">{review.license_plate}</div>
                         </div>
-                      </td>
-                      <td className="p-3">
-                        {renderStars(review.overall_rating)}
-                      </td>
+                                             </td>
+                       <td className="p-3">
+                         {review.service ? (
+                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                             review.service === 'Yango' ? 'bg-yellow-100 text-yellow-800' :
+                             review.service === 'Gett' ? 'bg-blue-100 text-blue-800' :
+                             review.service === 'Uber' ? 'bg-black text-white' :
+                             'bg-gray-100 text-gray-800'
+                           }`}>
+                             {review.service}
+                           </span>
+                         ) : (
+                           <span className="text-gray-400 text-sm">Not specified</span>
+                         )}
+                       </td>
+                       <td className="p-3">
+                         {renderStars(review.overall_rating)}
+                       </td>
                       <td className="p-3">
                         {review.pleasantness_rating ? (
                           renderStars(review.pleasantness_rating)

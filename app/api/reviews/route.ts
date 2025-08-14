@@ -15,6 +15,7 @@ export async function POST(request: NextRequest) {
       priceFair,
       comment,
       rideCity,
+      service,
       rideDate
     } = body
 
@@ -44,7 +45,8 @@ export async function POST(request: NextRequest) {
       waiting_time_minutes: wasOnTime ? undefined : waitingTimeMinutes,
       price_fair: priceFair,
       review_text: comment,
-      ride_city: rideCity
+      ride_city: rideCity,
+      service: service
     })
 
     return NextResponse.json({ success: true, review }, { status: 201 })

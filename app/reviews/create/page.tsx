@@ -59,6 +59,7 @@ export default function CreateReviewPage() {
     priceFair: true,
     comment: '',
     rideCity: '',
+    service: '',
     rideDate: new Date().toISOString().split('T')[0]
   })
 
@@ -237,6 +238,25 @@ export default function CreateReviewPage() {
               <Label htmlFor="priceFair" className="text-sm font-medium">
                 Price was fair for the service
               </Label>
+            </div>
+
+            {/* Service Selection */}
+            <div className="space-y-2">
+              <Label htmlFor="service" className="text-sm font-medium">
+                Service Used
+              </Label>
+              <select
+                id="service"
+                value={formData.service}
+                onChange={(e) => updateFormData('service', e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="">Select a service</option>
+                <option value="Yango">Yango</option>
+                <option value="Gett">Gett</option>
+                <option value="Uber">Uber</option>
+                <option value="Other">Other</option>
+              </select>
             </div>
 
             {/* Additional Info */}

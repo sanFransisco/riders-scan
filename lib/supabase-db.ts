@@ -65,6 +65,7 @@ export interface Review {
   price_fair: boolean;
   review_text?: string;
   ride_city?: string;
+  service?: string;
   created_at: Date;
 }
 
@@ -330,6 +331,21 @@ export async function initDatabase() {
       await client.query('UPDATE schema_version SET version = 2, updated_at = NOW() WHERE id = 1')
       console.log('✅ Applied migration to version 2')
     }
+    
+    if (currentVersion < 3) {
+      // Version 3: Add service field for ride booking platform
+      await client.query(`
+        DO $$ 
+        BEGIN
+          -- Add service column if it doesn't exist
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'reviews' AND column_name = 'service') THEN
+            ALTER TABLE reviews ADD COLUMN service TEXT CHECK (service IN ('Yango', 'Gett', 'Uber', 'Other'));
+          END IF;
+        END $$;
+      `)
+      await client.query('UPDATE schema_version SET version = 3, updated_at = NOW() WHERE id = 1')
+      console.log('✅ Applied migration to version 3')
+    }
 
     client.release()
     console.log('🎉 Database setup completed successfully! You are now an admin with role-based scopes.')
@@ -569,9 +585,9 @@ export async function createReview(reviewData: Omit<Review, 'id' | 'created_at'>
       INSERT INTO reviews (
         driver_id, overall_rating, pleasantness_rating, ride_speed_satisfied,
         was_on_time, waiting_time_minutes, price_fair,
-        review_text, ride_city, created_at
+        review_text, ride_city, service, created_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *
     `, [
       reviewData.driver_id,
@@ -583,6 +599,7 @@ export async function createReview(reviewData: Omit<Review, 'id' | 'created_at'>
       reviewData.price_fair,
       reviewData.review_text,
       reviewData.ride_city,
+      reviewData.service,
       new Date()
     ])
 

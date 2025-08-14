@@ -40,6 +40,7 @@ export async function GET(request: NextRequest) {
         r.price_fair,
         r.review_text,
         r.ride_city,
+        r.service,
         r.created_at
       FROM reviews r
       JOIN drivers d ON r.driver_id = d.id
