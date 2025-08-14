@@ -31,11 +31,11 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4">
-      <div className="text-center max-w-2xl">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6">
+      <div className="text-center max-w-2xl px-4">
         {/* Main Headline */}
         <div className="mb-8">
-          <h2 className="text-5xl font-bold text-black leading-tight">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-black leading-tight">
             Find honest driver reviews.
             <br />
             Make informed decisions.
@@ -44,7 +44,7 @@ export default function LandingPage() {
 
         {/* Descriptive Text */}
         <div className="mb-12">
-          <p className="text-lg text-black leading-relaxed">
+          <p className="text-base sm:text-lg text-black leading-relaxed">
             Now with community-driven insights, the most reliable, comprehensive, and honest driver database yet, with real experiences built in. Available for every rider.
           </p>
         </div>

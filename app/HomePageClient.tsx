@@ -63,10 +63,10 @@ export default function HomePageClient() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-2xl mx-auto space-y-8">
+    <div className="container mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-2xl mx-auto space-y-6 sm:space-y-8">
         {/* Search Section */}
-        <div className="bg-white rounded-lg p-8 text-center border shadow-sm">
+        <div className="bg-white rounded-lg p-6 sm:p-8 text-center border shadow-sm">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
             Find Driver Reviews
           </h2>
@@ -89,7 +89,7 @@ export default function HomePageClient() {
         </div>
 
         {/* Review Submission Section */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-8 text-center border border-blue-200">
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 sm:p-8 text-center border border-blue-200">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
             Share Your Experience
           </h2>
