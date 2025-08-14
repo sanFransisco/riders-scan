@@ -7,10 +7,12 @@ export async function GET(request: NextRequest) {
   try {
     // Check authentication
     const session = await getServerSession(serverAuthOptions)
-    console.log('Admin users API - Session:', session)
+    console.log('🔍 Admin users API - Session:', session)
+    console.log('🔍 Session user ID:', session?.user?.id)
+    console.log('🔍 Session user role:', session?.user?.role)
     
     if (!session || !session.user?.id) {
-      console.log('Admin users API - No session or user ID')
+      console.log('❌ Admin users API - No session or user ID')
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
@@ -28,13 +30,22 @@ export async function GET(request: NextRequest) {
     
     // Handle PostgreSQL array format for role check
     const userRole = adminCheck.rows[0].role
+    console.log('🔍 Database user role:', userRole)
+    console.log('🔍 Role type:', typeof userRole)
+    console.log('🔍 Is array:', Array.isArray(userRole))
+    
     const isAdmin = Array.isArray(userRole) ? userRole.includes('admin') : 
                    (typeof userRole === 'string' && userRole.includes('admin'))
     
+    console.log('🔍 Is admin check result:', isAdmin)
+    
     if (!isAdmin) {
       client.release()
+      console.log('❌ Admin access denied')
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
+    
+    console.log('✅ Admin access granted')
 
     // Get all users
     const result = await client.query(

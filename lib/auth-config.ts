@@ -33,11 +33,6 @@ export const serverAuthOptions = {
             await client.query(
               `UPDATE users 
                SET name = $1, 
-                   role = CASE 
-                     WHEN role IS NULL OR role = '{}'::TEXT[] OR role = ARRAY['']::TEXT[] 
-                     THEN ARRAY['user']::TEXT[] 
-                     ELSE role 
-                   END,
                    updated_at = NOW() 
                WHERE email = $2`,
               [user.name, user.email]
