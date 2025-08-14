@@ -553,7 +553,7 @@ export async function getDriverReviews(driverId: string): Promise<Review[]> {
 }
 
 // Create or find driver
-export async function createOrFindDriver(fullName: string, licensePlate: string): Promise<Driver> {
+export async function createOrFindDriver(fullName: string | null, licensePlate: string): Promise<Driver> {
   if (!isDatabaseAvailable()) {
     throw new Error('Database not configured. Please set POSTGRES_URL environment variable.');
   }

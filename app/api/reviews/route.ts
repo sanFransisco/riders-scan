@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     } = body
 
     // Validate required fields
-    if (!driverName || !licensePlate || !overallRating || !rideDate) {
+    if (!licensePlate || !overallRating || !rideDate) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create or find driver
-    const driver = await createOrFindDriver(driverName, licensePlate)
+    const driver = await createOrFindDriver(driverName || null, licensePlate)
 
     // Create review
     const review = await createReview({
