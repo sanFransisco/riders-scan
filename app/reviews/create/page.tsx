@@ -167,7 +167,10 @@ export default function CreateReviewPage() {
                   id="licensePlate"
                   value={formData.licensePlate}
                   onChange={(e) => updateFormData('licensePlate', e.target.value)}
-                  placeholder="Enter license plate number"
+                  placeholder="e.g., 123-45 or AB-123"
+                  pattern="^[0-9]{2,3}-[0-9]{2,3}$|^[A-Z]{2,3}-[0-9]{2,3}$"
+                  title="Israeli license plate format: 123-45 or AB-123"
+                  maxLength={7}
                   required
                 />
               </div>

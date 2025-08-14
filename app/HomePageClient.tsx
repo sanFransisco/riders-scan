@@ -75,10 +75,13 @@ export default function HomePageClient() {
           </p>
           <div className="flex gap-2 max-w-md mx-auto">
             <Input
-              placeholder="Enter license plate number..."
+              placeholder="e.g., 123-45 or AB-123..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={handleKeyPress}
+              pattern="^[0-9]{2,3}-[0-9]{2,3}$|^[A-Z]{2,3}-[0-9]{2,3}$"
+              title="Israeli license plate format: 123-45 or AB-123"
+                                maxLength={7}
               className="flex-1"
             />
             <Button 
