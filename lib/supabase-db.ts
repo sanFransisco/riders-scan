@@ -66,6 +66,7 @@ export interface Review {
   review_text?: string;
   ride_city?: string;
   service?: string;
+  review_approved?: boolean;
   created_at: Date;
 }
 

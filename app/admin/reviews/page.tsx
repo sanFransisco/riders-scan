@@ -22,6 +22,7 @@ interface Review {
   review_text?: string
   ride_city?: string
   service?: string
+  review_approved?: boolean
   created_at: string
 }
 
@@ -89,6 +90,32 @@ export default function AdminReviewsPage() {
       alert('Failed to delete review')
     } finally {
       setDeletingId(null)
+    }
+  }
+
+  const approveReview = async (reviewId: string, approved: boolean) => {
+    try {
+      const response = await fetch(`/api/admin/reviews/${reviewId}/approve`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ approved }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to approve review')
+      }
+
+      // Update local state
+      setReviews(reviews.map(review => 
+        review.id === reviewId 
+          ? { ...review, review_approved: approved }
+          : review
+      ))
+    } catch (error) {
+      console.error('Error approving review:', error)
+      alert('Failed to approve review')
     }
   }
 
@@ -262,9 +289,19 @@ export default function AdminReviewsPage() {
                       <td className="p-3">
                         <div className="flex items-center gap-2">
                           {review.review_text && (
-                            <div className="flex items-center gap-1 text-sm text-gray-600">
-                              <MessageSquare className="h-3 w-3" />
-                              Has comment
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1 text-sm text-gray-600">
+                                <MessageSquare className="h-3 w-3" />
+                                Has comment
+                              </div>
+                              <Button
+                                variant={review.review_approved ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => approveReview(review.id, !review.review_approved)}
+                                className="text-xs px-2 py-1"
+                              >
+                                {review.review_approved ? 'Approved' : 'Approve'}
+                              </Button>
                             </div>
                           )}
                           <Button

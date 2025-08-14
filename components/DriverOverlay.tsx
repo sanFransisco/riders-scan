@@ -1,6 +1,7 @@
 'use client'
 
-import { X, Star, Clock, DollarSign, MapPin } from 'lucide-react'
+import { useState } from 'react'
+import { X, Star, Clock, DollarSign, MapPin, MessageSquare } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { DriverAnalytics } from '@/lib/supabase-db'
@@ -18,6 +19,48 @@ interface DriverOverlayProps {
 }
 
 export default function DriverOverlay({ driver, onClose }: DriverOverlayProps) {
+  const [showReviews, setShowReviews] = useState(false)
+  const [reviews, setReviews] = useState<any[]>([])
+  const [reviewsLoading, setReviewsLoading] = useState(false)
+
+  const fetchReviews = async () => {
+    setReviewsLoading(true)
+    try {
+      const response = await fetch(`/api/drivers/${driver.id}/reviews`)
+      if (response.ok) {
+        const data = await response.json()
+        setReviews(data.reviews || [])
+      }
+    } catch (error) {
+      console.error('Error fetching reviews:', error)
+    } finally {
+      setReviewsLoading(false)
+    }
+  }
+
+  const renderStars = (rating: number) => {
+    return (
+      <div className="flex items-center gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Star
+            key={star}
+            className={`h-4 w-4 ${rating >= star ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+          />
+        ))}
+      </div>
+    )
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString()
+  }
+
+  const handleShowReviews = () => {
+    setShowReviews(true)
+    if (reviews.length === 0) {
+      fetchReviews()
+    }
+  }
 
   return (
     <div className="fixed inset-0 bg-background z-50 overflow-y-auto">
@@ -39,9 +82,11 @@ export default function DriverOverlay({ driver, onClose }: DriverOverlayProps) {
           <div className="max-w-4xl mx-auto space-y-8">
             {/* Driver Header */}
             <div className="text-center space-y-4">
-              <h1 className="text-4xl font-bold tracking-tight">
-                {driver.full_name || 'Unknown Driver'}
-              </h1>
+              {driver.full_name && (
+                <h1 className="text-4xl font-bold tracking-tight">
+                  {driver.full_name}
+                </h1>
+              )}
               <p className="text-xl text-muted-foreground font-mono">
                 {driver.license_plate}
               </p>
@@ -197,6 +242,86 @@ export default function DriverOverlay({ driver, onClose }: DriverOverlayProps) {
               </Card>
             )}
 
+            {/* Reviews Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5 text-gray-600" />
+                    Reviews
+                  </span>
+                  {!showReviews && (
+                    <Button
+                      onClick={handleShowReviews}
+                      className="bg-white text-black border border-gray-300 hover:bg-gray-50 rounded-full px-4 py-2 font-medium"
+                    >
+                      Show Reviews
+                    </Button>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {showReviews ? (
+                  <div className="space-y-4">
+                    {reviewsLoading ? (
+                      <div className="text-center py-4">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900 mx-auto"></div>
+                        <p className="text-sm text-gray-600 mt-2">Loading reviews...</p>
+                      </div>
+                    ) : reviews.length > 0 ? (
+                      <div className="space-y-4">
+                        {reviews.map((review) => (
+                          <div key={review.id} className="border border-gray-200 rounded-lg p-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                {renderStars(review.overall_rating)}
+                                <span className="text-sm text-gray-600">
+                                  {formatDate(review.created_at)}
+                                </span>
+                              </div>
+                              {review.service && (
+                                <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">
+                                  {review.service}
+                                </span>
+                              )}
+                            </div>
+                            
+                            <div className="space-y-2 text-sm">
+                              <div className="flex items-center gap-4">
+                                <span className={`flex items-center gap-1 ${review.ride_speed_satisfied ? 'text-green-600' : 'text-red-600'}`}>
+                                  <div className={`w-2 h-2 rounded-full ${review.ride_speed_satisfied ? 'bg-green-500' : 'bg-red-500'}`} />
+                                  {review.ride_speed_satisfied ? 'Speed satisfied' : 'Speed not satisfied'}
+                                </span>
+                                <span className={`flex items-center gap-1 ${review.was_on_time ? 'text-green-600' : 'text-red-600'}`}>
+                                  <Clock className="h-3 w-3" />
+                                  {review.was_on_time ? 'On time' : `Late (${review.waiting_time_minutes}min)`}
+                                </span>
+                                <span className={`flex items-center gap-1 ${review.price_fair ? 'text-green-600' : 'text-red-600'}`}>
+                                  <div className={`w-2 h-2 rounded-full ${review.price_fair ? 'bg-green-500' : 'bg-red-500'}`} />
+                                  {review.price_fair ? 'Fair price' : 'Unfair price'}
+                                </span>
+                              </div>
+                              
+                              {review.review_text && review.review_approved && (
+                                <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                                  <p className="text-gray-700">{review.review_text}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-center text-gray-500 py-4">No reviews found</p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-center text-gray-500 py-4">
+                    Click "Show Reviews" to view detailed reviews for this driver
+                  </p>
+                )}
+              </CardContent>
+            </Card>
 
           </div>
         </div>
