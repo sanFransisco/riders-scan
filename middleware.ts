@@ -19,22 +19,9 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Handle authentication routing
-  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
-  
-  // If user is not authenticated and trying to access home page, redirect to landing
-  if (!token && pathname === '/') {
-    return NextResponse.redirect(new URL('/landing', request.url))
-  }
-
-  // If user is authenticated and trying to access landing page, redirect to home
-  if (token && pathname === '/landing') {
-    return NextResponse.redirect(new URL('/', request.url))
-  }
-
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/', '/landing']
+  matcher: ['/']
 }
