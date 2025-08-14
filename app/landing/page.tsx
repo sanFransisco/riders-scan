@@ -1,12 +1,33 @@
-import { getServerSession } from 'next-auth/next'
-import { redirect } from 'next/navigation'
-import { serverAuthOptions } from '@/lib/auth-config'
+'use client'
 
-export default async function LandingPage() {
-  const session = await getServerSession(serverAuthOptions)
-  
-  if (session) {
-    redirect('/')
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
+import { signIn } from 'next-auth/react'
+
+export default function LandingPage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (status === 'authenticated' && session) {
+      router.push('/')
+    }
+  }, [session, status, router])
+
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+          <p className="text-black">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (status === 'authenticated') {
+    return null // Will redirect to home page
   }
 
   return (
@@ -30,15 +51,15 @@ export default async function LandingPage() {
 
         {/* Call to Action */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <a
-            href="/auth/signin"
+          <button
+            onClick={() => signIn('google')}
             className="px-8 py-3 bg-black text-white rounded-full hover:bg-gray-800 transition-colors font-medium inline-flex items-center"
           >
             Start now
             <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-          </a>
+          </button>
           <a
             href="#"
             className="text-black hover:text-gray-700 transition-colors font-medium"
