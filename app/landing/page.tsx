@@ -1,32 +1,12 @@
-'use client'
+import { getServerSession } from 'next-auth/next'
+import { redirect } from 'next/navigation'
+import { serverAuthOptions } from '@/lib/auth-config'
 
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
-
-export default function LandingPage() {
-  const { data: session, status } = useSession()
-  const router = useRouter()
-
-  useEffect(() => {
-    if (status === 'authenticated' && session) {
-      router.push('/')
-    }
-  }, [session, status, router])
-
-  if (status === 'loading') {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (status === 'authenticated') {
-    return null // Will redirect to home page
+export default async function LandingPage() {
+  const session = await getServerSession(serverAuthOptions)
+  
+  if (session) {
+    redirect('/')
   }
 
   return (
@@ -40,12 +20,12 @@ export default function LandingPage() {
             The honest database of local drivers. Make informed decisions about your ride.
           </p>
           <div className="flex justify-center gap-4">
-            <button
-              onClick={() => router.push('/auth/signin')}
-              className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+            <a
+              href="/auth/signin"
+              className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium inline-block"
             >
               Get Started
-            </button>
+            </a>
           </div>
         </div>
 
