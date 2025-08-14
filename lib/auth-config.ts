@@ -29,9 +29,17 @@ export const serverAuthOptions = {
               [user.email, user.name, 'user']
             )
           } else {
-            // Update existing user
+            // Update existing user - ensure role is properly set if it's null/empty
             await client.query(
-              'UPDATE users SET name = $1, updated_at = NOW() WHERE email = $2',
+              `UPDATE users 
+               SET name = $1, 
+                   role = CASE 
+                     WHEN role IS NULL OR role = '{}' OR role = ARRAY[''] 
+                     THEN ARRAY['user'] 
+                     ELSE role 
+                   END,
+                   updated_at = NOW() 
+               WHERE email = $2`,
               [user.name, user.email]
             )
           }
@@ -59,7 +67,9 @@ export const serverAuthOptions = {
             session.user.id = userData.id
             // Handle role as array - check if user has admin role
             const roles = userData.role || ['user']
-            session.user.role = roles.includes('admin') ? 'admin' : 'user'
+            // Ensure roles is an array and not empty
+            const validRoles = Array.isArray(roles) && roles.length > 0 ? roles : ['user']
+            session.user.role = validRoles.includes('admin') ? 'admin' : 'user'
           }
         } catch (error) {
           console.error('Error getting user session data:', error)
