@@ -29,12 +29,28 @@ export async function POST(request: NextRequest) {
         ON CONFLICT (id) DO UPDATE SET version = 3, updated_at = NOW()
       `)
       
-      // 3. Fix user roles
+      // 3. Fix user roles - handle each case separately
       console.log('Fixing user roles...')
+      
+      // First, fix NULL roles
       await client.query(`
         UPDATE users 
         SET role = ARRAY['user']::TEXT[] 
-        WHERE role IS NULL OR role = '{}'::TEXT[] OR role = ARRAY['']::TEXT[]
+        WHERE role IS NULL
+      `)
+      
+      // Then fix empty array roles
+      await client.query(`
+        UPDATE users 
+        SET role = ARRAY['user']::TEXT[] 
+        WHERE role = '{}'::TEXT[]
+      `)
+      
+      // Then fix roles with empty string
+      await client.query(`
+        UPDATE users 
+        SET role = ARRAY['user']::TEXT[] 
+        WHERE role = ARRAY['']::TEXT[]
       `)
       
       // 4. Ensure admin user has correct role
