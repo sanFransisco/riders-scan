@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       price_fair: priceFair,
       review_text: comment,
       ride_city: rideCity,
-      service: service
+      service: service && service.trim() !== '' ? service : null
     })
 
     return NextResponse.json({ success: true, review }, { status: 201 })
