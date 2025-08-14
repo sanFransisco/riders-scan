@@ -95,6 +95,27 @@ export default function DriverSelectionOverlay({ drivers, onSelectDriver, onClos
                         <span className="truncate">{driver.service_cities.slice(0, 2).join(', ')}</span>
                       </div>
                     )}
+                    
+                    {/* Service Ratings */}
+                    {driver.service_ratings && Object.keys(driver.service_ratings).length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {Object.entries(driver.service_ratings).slice(0, 2).map(([service, data]) => (
+                          <div
+                            key={service}
+                            className="flex items-center gap-1 px-2 py-1 bg-gray-50 border border-gray-200 rounded text-xs"
+                          >
+                            <span className="font-medium text-gray-700">{service}</span>
+                            <div className="flex items-center gap-1">
+                              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                              <span className="font-bold">{data.rating}</span>
+                            </div>
+                          </div>
+                        ))}
+                        {Object.keys(driver.service_ratings).length > 2 && (
+                          <span className="text-xs text-gray-500">+{Object.keys(driver.service_ratings).length - 2} more</span>
+                        )}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}

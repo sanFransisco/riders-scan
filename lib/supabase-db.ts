@@ -464,9 +464,37 @@ export async function searchDrivers(query: string): Promise<DriverAnalytics[]> {
       ORDER BY avg_overall DESC NULLS LAST, total_reviews DESC
     `, [`%${query}%`])
 
+    // Get service ratings for all found drivers
+    const drivers = result.rows as DriverAnalytics[]
+    
+    for (const driver of drivers) {
+      const serviceRatingsResult = await client.query(`
+        SELECT 
+          r.service,
+          ROUND(AVG(r.overall_rating), 1) as rating,
+          COUNT(*) as count
+        FROM reviews r
+        WHERE r.driver_id = $1 AND r.service IS NOT NULL
+        GROUP BY r.service
+      `, [driver.id])
+
+      // Process service ratings
+      const serviceRatings: any = {}
+      serviceRatingsResult.rows.forEach((row: any) => {
+        if (row.service && row.rating && row.count) {
+          serviceRatings[row.service] = {
+            rating: parseFloat(row.rating),
+            count: parseInt(row.count)
+          }
+        }
+      })
+      
+      driver.service_ratings = serviceRatings
+    }
+
     client.release()
-    console.log(`Search completed successfully, found ${result.rows.length} results`)
-    return result.rows as DriverAnalytics[]
+    console.log(`Search completed successfully, found ${drivers.length} results`)
+    return drivers
   } catch (error) {
     console.error('Error searching drivers:', error)
     if (error instanceof Error) {
