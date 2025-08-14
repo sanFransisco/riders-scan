@@ -33,15 +33,15 @@ export async function POST(request: NextRequest) {
       console.log('Fixing user roles...')
       await client.query(`
         UPDATE users 
-        SET role = ARRAY['user'] 
-        WHERE role IS NULL OR role = '{}' OR role = ARRAY['']
+        SET role = ARRAY['user']::TEXT[] 
+        WHERE role IS NULL OR role = '{}'::TEXT[] OR role = ARRAY['']::TEXT[]
       `)
       
       // 4. Ensure admin user has correct role
       console.log('Setting admin role...')
       await client.query(`
         UPDATE users 
-        SET role = ARRAY['admin'] 
+        SET role = ARRAY['admin']::TEXT[] 
         WHERE email = 'yalibar1121@gmail.com'
       `)
       

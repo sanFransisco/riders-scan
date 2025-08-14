@@ -25,7 +25,7 @@ export const serverAuthOptions = {
           if (existingUser.rows.length === 0) {
             // Create new user
             await client.query(
-              'INSERT INTO users (email, name, role) VALUES ($1, $2, ARRAY[$3])',
+              'INSERT INTO users (email, name, role) VALUES ($1, $2, ARRAY[$3]::TEXT[])',
               [user.email, user.name, 'user']
             )
           } else {
@@ -34,8 +34,8 @@ export const serverAuthOptions = {
               `UPDATE users 
                SET name = $1, 
                    role = CASE 
-                     WHEN role IS NULL OR role = '{}' OR role = ARRAY[''] 
-                     THEN ARRAY['user'] 
+                     WHEN role IS NULL OR role = '{}'::TEXT[] OR role = ARRAY['']::TEXT[] 
+                     THEN ARRAY['user']::TEXT[] 
                      ELSE role 
                    END,
                    updated_at = NOW() 
