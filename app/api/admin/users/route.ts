@@ -21,7 +21,17 @@ export async function GET(request: NextRequest) {
       [session.user.id]
     )
     
-    if (adminCheck.rows.length === 0 || !adminCheck.rows[0].role.includes('admin')) {
+    if (adminCheck.rows.length === 0) {
+      client.release()
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
+    }
+    
+    // Handle PostgreSQL array format for role check
+    const userRole = adminCheck.rows[0].role
+    const isAdmin = Array.isArray(userRole) ? userRole.includes('admin') : 
+                   (typeof userRole === 'string' && userRole.includes('admin'))
+    
+    if (!isAdmin) {
       client.release()
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }

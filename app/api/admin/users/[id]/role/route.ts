@@ -3,6 +3,28 @@ import { getServerSession } from 'next-auth/next'
 import { serverAuthOptions } from '@/lib/auth-config'
 import { pool } from '@/lib/supabase-db'
 
+// Helper function to check if user is admin
+async function checkAdminAccess(userId: string) {
+  const client = await pool.connect()
+  const adminCheck = await client.query(
+    'SELECT role FROM users WHERE id = $1',
+    [userId]
+  )
+  
+  if (adminCheck.rows.length === 0) {
+    client.release()
+    return false
+  }
+  
+  // Handle PostgreSQL array format for role check
+  const userRole = adminCheck.rows[0].role
+  const isAdmin = Array.isArray(userRole) ? userRole.includes('admin') : 
+                 (typeof userRole === 'string' && userRole.includes('admin'))
+  
+  client.release()
+  return isAdmin
+}
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -16,14 +38,8 @@ export async function PUT(
     }
 
     // Check if current user is admin
-    const client = await pool.connect()
-    const adminCheck = await client.query(
-      'SELECT role FROM users WHERE id = $1',
-      [session.user.id]
-    )
-    
-    if (adminCheck.rows.length === 0 || !adminCheck.rows[0].role.includes('admin')) {
-      client.release()
+    const isAdmin = await checkAdminAccess(session.user.id)
+    if (!isAdmin) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 
@@ -33,18 +49,17 @@ export async function PUT(
     // Validate role
     const validRoles = ['user', 'moderator', 'admin']
     if (!validRoles.includes(role)) {
-      client.release()
       return NextResponse.json({ 
         error: 'Invalid role. Must be one of: user, moderator, admin' 
       }, { status: 400 })
     }
 
     // Update user role - store as array
+    const client = await pool.connect()
     const result = await client.query(
-      'UPDATE users SET role = ARRAY[$1], updated_at = NOW() WHERE id = $2 RETURNING id, email, role',
+      'UPDATE users SET role = ARRAY[$1]::TEXT[], updated_at = NOW() WHERE id = $2 RETURNING id, email, role',
       [role, userId]
     )
-
     client.release()
 
     if (result.rows.length === 0) {
@@ -77,25 +92,19 @@ export async function GET(
     }
 
     // Check if current user is admin
-    const client = await pool.connect()
-    const adminCheck = await client.query(
-      'SELECT role FROM users WHERE id = $1',
-      [session.user.id]
-    )
-    
-    if (adminCheck.rows.length === 0 || !adminCheck.rows[0].role.includes('admin')) {
-      client.release()
+    const isAdmin = await checkAdminAccess(session.user.id)
+    if (!isAdmin) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 
     const userId = params.id
 
     // Get user role
+    const client = await pool.connect()
     const result = await client.query(
       'SELECT id, email, name, role FROM users WHERE id = $1',
       [userId]
     )
-
     client.release()
 
     if (result.rows.length === 0) {
