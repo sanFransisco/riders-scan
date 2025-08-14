@@ -52,7 +52,7 @@ export default function DriverSelectionOverlay({ drivers, onSelectDriver, onClos
               {drivers.map((driver) => (
                 <Card 
                   key={driver.id} 
-                  className="hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-blue-300"
+                  className="hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-gray-300"
                   onClick={() => onSelectDriver(driver)}
                 >
                   <CardHeader>
@@ -91,7 +91,7 @@ export default function DriverSelectionOverlay({ drivers, onSelectDriver, onClos
                     
                     {driver.service_cities && driver.service_cities.length > 0 && (
                       <div className="flex items-center gap-2 text-sm">
-                        <MapPin className="h-4 w-4 text-blue-600" />
+                        <MapPin className="h-4 w-4 text-gray-600" />
                         <span className="truncate">{driver.service_cities.slice(0, 2).join(', ')}</span>
                       </div>
                     )}

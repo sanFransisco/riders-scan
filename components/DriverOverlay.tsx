@@ -151,7 +151,7 @@ export default function DriverOverlay({ driver, onClose }: DriverOverlayProps) {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <MapPin className="h-5 w-5 text-blue-600" />
+                    <MapPin className="h-5 w-5 text-gray-600" />
                     Service Areas
                   </CardTitle>
                 </CardHeader>
@@ -160,7 +160,7 @@ export default function DriverOverlay({ driver, onClose }: DriverOverlayProps) {
                     {driver.service_cities.map((city, index) => (
                       <span
                         key={index}
-                        className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                        className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm"
                       >
                         {city}
                       </span>

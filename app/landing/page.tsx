@@ -53,7 +53,7 @@ export default function LandingPage() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
           <button
             onClick={() => signIn('google')}
-            className="px-8 py-3 bg-black text-white rounded-full hover:bg-gray-800 transition-colors font-medium inline-flex items-center"
+            className="px-8 py-3 bg-white text-black border border-gray-300 rounded-full hover:bg-gray-50 transition-colors font-medium inline-flex items-center"
           >
             Start now
             <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

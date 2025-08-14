@@ -81,7 +81,11 @@ export default function HomePageClient() {
               onKeyPress={handleKeyPress}
               className="flex-1"
             />
-            <Button onClick={handleSearch} disabled={isSearching}>
+            <Button 
+              onClick={handleSearch} 
+              disabled={isSearching}
+              className="bg-white text-black border border-gray-300 hover:bg-gray-50 rounded-full px-4 py-2 font-medium"
+            >
               <Search className="h-4 w-4 mr-2" />
               {isSearching ? 'Searching...' : 'Search'}
             </Button>
@@ -89,7 +93,7 @@ export default function HomePageClient() {
         </div>
 
         {/* Review Submission Section */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 sm:p-8 text-center border border-blue-200">
+        <div className="bg-white rounded-lg p-6 sm:p-8 text-center border border-gray-200 shadow-sm">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
             Share Your Experience
           </h2>
@@ -98,8 +102,7 @@ export default function HomePageClient() {
           </p>
           <Button
             onClick={() => router.push('/reviews/create')}
-            size="lg"
-            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3"
+            className="bg-white text-black border border-gray-300 hover:bg-gray-50 rounded-full px-6 py-3 font-medium"
           >
             <Plus className="h-5 w-5 mr-2" />
             Submit a Review

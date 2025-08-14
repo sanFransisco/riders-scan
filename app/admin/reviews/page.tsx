@@ -210,7 +210,7 @@ export default function AdminReviewsPage() {
                          {review.service ? (
                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                              review.service === 'Yango' ? 'bg-yellow-100 text-yellow-800' :
-                             review.service === 'Gett' ? 'bg-blue-100 text-blue-800' :
+                             review.service === 'Gett' ? 'bg-gray-100 text-gray-800' :
                              review.service === 'Uber' ? 'bg-black text-white' :
                              'bg-gray-100 text-gray-800'
                            }`}>

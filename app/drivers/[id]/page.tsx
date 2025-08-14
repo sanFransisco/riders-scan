@@ -172,7 +172,7 @@ export default function DriverProfilePage() {
             {analytics.service_cities && analytics.service_cities.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {analytics.service_cities.map((city, index) => (
-                  <div key={index} className="flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                  <div key={index} className="flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">
                     <MapPin className="h-3 w-3" />
                     {city}
                   </div>
