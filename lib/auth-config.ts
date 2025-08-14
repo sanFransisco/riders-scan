@@ -60,11 +60,19 @@ export const serverAuthOptions = {
           if (userResult.rows.length > 0) {
             const userData = userResult.rows[0]
             session.user.id = userData.id
-            // Handle role as array - check if user has admin role
-            const roles = userData.role || ['user']
-            // Ensure roles is an array and not empty
-            const validRoles = Array.isArray(roles) && roles.length > 0 ? roles : ['user']
-            session.user.role = validRoles.includes('admin') ? 'admin' : 'user'
+            
+            // Handle PostgreSQL array format for role check
+            const userRole = userData.role
+            console.log('🔍 Session callback - Database role:', userRole)
+            console.log('🔍 Session callback - Role type:', typeof userRole)
+            console.log('🔍 Session callback - Is array:', Array.isArray(userRole))
+            
+            // Check if user has admin role
+            const isAdmin = Array.isArray(userRole) ? userRole.includes('admin') : 
+                           (typeof userRole === 'string' && userRole.includes('admin'))
+            
+            session.user.role = isAdmin ? 'admin' : 'user'
+            console.log('🔍 Session callback - Final session role:', session.user.role)
           }
         } catch (error) {
           console.error('Error getting user session data:', error)
