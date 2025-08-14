@@ -150,14 +150,13 @@ export default function CreateReviewPage() {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="driverName" className="text-sm font-medium">
-                  Driver Name <span className="text-red-500">*</span>
+                  Driver Name (Optional)
                 </Label>
                 <Input
                   id="driverName"
                   value={formData.driverName}
                   onChange={(e) => updateFormData('driverName', e.target.value)}
-                  placeholder="Enter driver's full name"
-                  required
+                  placeholder="Enter driver's full name (optional)"
                 />
               </div>
               <div className="space-y-2">

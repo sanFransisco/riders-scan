@@ -40,7 +40,7 @@ export default function DriverOverlay({ driver, onClose }: DriverOverlayProps) {
             {/* Driver Header */}
             <div className="text-center space-y-4">
               <h1 className="text-4xl font-bold tracking-tight">
-                {driver.full_name}
+                {driver.full_name || 'Unknown Driver'}
               </h1>
               <p className="text-xl text-muted-foreground font-mono">
                 {driver.license_plate}

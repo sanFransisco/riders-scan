@@ -49,7 +49,7 @@ export const pool = createPool()
 
 export interface Driver {
   id: string;
-  full_name: string;
+  full_name?: string;
   license_plate: string;
   created_at: Date;
 }
@@ -71,7 +71,7 @@ export interface Review {
 
 export interface DriverAnalytics {
   id: string;
-  full_name: string;
+  full_name?: string;
   license_plate: string;
   total_reviews: number;
   avg_overall: number;
@@ -141,7 +141,7 @@ export async function initDatabase() {
       // 3. Create drivers table (no dependencies)
       `CREATE TABLE IF NOT EXISTS drivers (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        full_name TEXT NOT NULL,
+        full_name TEXT,
         license_plate TEXT UNIQUE NOT NULL,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()

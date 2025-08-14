@@ -71,11 +71,11 @@ export default function HomePageClient() {
             Find Driver Reviews
           </h2>
           <p className="text-gray-600 mb-6">
-            Search by driver name or license plate to see ratings and reviews.
+            Search by license plate number to see ratings and reviews. Driver name is optional.
           </p>
           <div className="flex gap-2 max-w-md mx-auto">
             <Input
-              placeholder="Search by driver name or license plate..."
+              placeholder="Enter license plate number..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={handleKeyPress}

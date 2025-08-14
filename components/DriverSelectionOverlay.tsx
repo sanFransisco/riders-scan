@@ -57,7 +57,7 @@ export default function DriverSelectionOverlay({ drivers, onSelectDriver, onClos
                 >
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
-                      <span className="text-xl">{driver.full_name}</span>
+                      <span className="text-xl">{driver.full_name || 'Unknown Driver'}</span>
                       {driver.avg_overall && (
                         <div className="flex items-center gap-1 text-sm">
                           <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
