@@ -22,7 +22,19 @@ export async function DELETE(
       [session.user.id]
     )
 
-    if (!adminCheck.rows[0] || !adminCheck.rows[0].role.includes('admin') && !adminCheck.rows[0].role.includes('moderator')) {
+    if (!adminCheck.rows[0]) {
+      client.release()
+      return NextResponse.json({ error: 'Admin or moderator access required' }, { status: 403 })
+    }
+    
+    // Handle PostgreSQL array format for role check
+    const userRole = adminCheck.rows[0].role
+    const isAdmin = Array.isArray(userRole) ? userRole.includes('admin') : 
+                   (typeof userRole === 'string' && userRole.includes('admin'))
+    const isModerator = Array.isArray(userRole) ? userRole.includes('moderator') : 
+                       (typeof userRole === 'string' && userRole.includes('moderator'))
+    
+    if (!isAdmin && !isModerator) {
       client.release()
       return NextResponse.json({ error: 'Admin or moderator access required' }, { status: 403 })
     }
