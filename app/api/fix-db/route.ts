@@ -29,63 +29,23 @@ export async function POST(request: NextRequest) {
         ON CONFLICT (id) DO UPDATE SET version = 3, updated_at = NOW()
       `)
       
-      // 3. Fix user roles - handle each case separately
-      console.log('Fixing user roles...')
-      
-      // First, fix NULL roles
-      await client.query(`
-        UPDATE users 
-        SET role = ARRAY['user']::TEXT[] 
-        WHERE role IS NULL
-      `)
-      
-      // Then fix empty array roles
-      await client.query(`
-        UPDATE users 
-        SET role = ARRAY['user']::TEXT[] 
-        WHERE role = '{}'::TEXT[]
-      `)
-      
-      // Then fix roles with empty string
-      await client.query(`
-        UPDATE users 
-        SET role = ARRAY['user']::TEXT[] 
-        WHERE role = ARRAY['']::TEXT[]
-      `)
-      
-      // 4. Ensure admin user has correct role
-      console.log('Setting admin role...')
-      await client.query(`
-        UPDATE users 
-        SET role = ARRAY['admin']::TEXT[] 
-        WHERE email = 'yalibar1121@gmail.com'
-      `)
-      
-      // 5. Verify fixes
-      console.log('Verifying fixes...')
-      
+      // 3. Verify the service column was added
+      console.log('Verifying service column...')
       const reviewsColumns = await client.query(`
         SELECT column_name, data_type, is_nullable 
         FROM information_schema.columns 
-        WHERE table_name = 'reviews' 
-        ORDER BY ordinal_position
+        WHERE table_name = 'reviews' AND column_name = 'service'
       `)
-      console.log('Reviews table columns:', reviewsColumns.rows)
       
       const schemaVersion = await client.query('SELECT version FROM schema_version WHERE id = 1')
-      console.log('Schema version:', schemaVersion.rows[0])
       
-      const users = await client.query('SELECT email, role FROM users LIMIT 5')
-      console.log('User roles:', users.rows)
-      
-      console.log('✅ Database fixes completed successfully!')
+      console.log('✅ Service column fix completed!')
       
       return NextResponse.json({ 
         success: true, 
-        message: 'Database fixes completed successfully',
-        reviewsColumns: reviewsColumns.rows,
-        schemaVersion: schemaVersion.rows[0],
-        users: users.rows
+        message: 'Service column added successfully',
+        serviceColumnExists: reviewsColumns.rows.length > 0,
+        schemaVersion: schemaVersion.rows[0]?.version || 'unknown'
       })
       
     } finally {
