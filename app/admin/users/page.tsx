@@ -20,8 +20,15 @@ export default function AdminUsersPage() {
   const [updating, setUpdating] = useState<string | null>(null)
 
   useEffect(() => {
+    console.log('🔍 Admin Users Page - Session:', session)
+    console.log('🔍 Session user role:', session?.user?.role)
+    console.log('🔍 Status:', status)
+    
     if (session?.user?.role === 'admin' && status === 'authenticated') {
+      console.log('✅ Fetching users...')
       fetchUsers()
+    } else {
+      console.log('❌ Not fetching users - role or status issue')
     }
   }, [session, status])
 
@@ -80,7 +87,14 @@ export default function AdminUsersPage() {
   }
 
   if (session.user?.role !== 'admin') {
-    return <div className="flex items-center justify-center min-h-screen">Admin access required</div>
+    console.log('❌ Admin access denied - role:', session.user?.role)
+    return <div className="flex items-center justify-center min-h-screen">
+      <div>
+        <h2 className="text-xl font-bold mb-2">Admin access required</h2>
+        <p className="text-gray-600">Your role: {session.user?.role || 'undefined'}</p>
+        <p className="text-gray-600">User ID: {session.user?.id || 'undefined'}</p>
+      </div>
+    </div>
   }
 
   return (

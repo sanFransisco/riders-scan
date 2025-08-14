@@ -34,13 +34,21 @@ export default function AdminReviewsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
+    console.log('🔍 Admin Reviews Page - Session:', session)
+    console.log('🔍 Session user role:', session?.user?.role)
+    console.log('🔍 Status:', status)
+    
     if (status === 'loading') return
 
     if (!session || !session.user?.role || !['admin', 'moderator'].includes(session.user.role)) {
+      console.log('❌ Redirecting to home - role or session issue')
+      console.log('❌ Session exists:', !!session)
+      console.log('❌ User role:', session?.user?.role)
       router.push('/')
       return
     }
 
+    console.log('✅ Fetching reviews...')
     fetchReviews()
   }, [session, status, router])
 
