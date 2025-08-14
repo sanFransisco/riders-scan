@@ -1,26 +1,40 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { getToken } from 'next-auth/jwt'
 
-// This runs on every request, but we'll use it to trigger DB init
-export function middleware(request: NextRequest) {
-  // Only run on the first request to trigger DB initialization
-  if (request.nextUrl.pathname === '/') {
-    // Trigger DB init in the background
-    fetch(`${request.nextUrl.origin}/api/init`, { method: 'POST' }).catch(console.error)
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  // Initialize database on first request
+  if (pathname === '/') {
+    try {
+      await fetch(`${request.nextUrl.origin}/api/init`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+    } catch (error) {
+      console.error('Failed to initialize database:', error)
+    }
   }
+
+  // Handle authentication routing
+  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
   
+  // If user is not authenticated and trying to access protected routes
+  if (!token && pathname === '/') {
+    return NextResponse.redirect(new URL('/landing', request.url))
+  }
+
+  // If user is authenticated and trying to access landing page, redirect to home
+  if (token && pathname === '/landing') {
+    return NextResponse.redirect(new URL('/', request.url))
+  }
+
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
-  ],
+  matcher: ['/', '/landing']
 }

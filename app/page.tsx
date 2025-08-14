@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { Plus, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,11 +11,33 @@ import DriverOverlay from '@/components/DriverOverlay'
 import DriverSelectionOverlay from '@/components/DriverSelectionOverlay'
 
 export default function HomePage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedDriver, setSelectedDriver] = useState<DriverAnalytics | null>(null)
   const [searchResults, setSearchResults] = useState<DriverAnalytics[]>([])
   const [isSearching, setIsSearching] = useState(false)
-  const router = useRouter()
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/landing')
+    }
+  }, [status, router])
+
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (status === 'unauthenticated') {
+    return null // Will redirect to landing page
+  }
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return
