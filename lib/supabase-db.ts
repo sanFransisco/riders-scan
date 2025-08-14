@@ -209,7 +209,7 @@ export async function initDatabase() {
          RETURN EXISTS (
            SELECT 1 
            FROM users u
-           JOIN role_scopes rs ON rs.role_name = ANY(u.role)
+           JOIN role_scopes rs ON rs.role_name = ANY(u.role::TEXT[])
            WHERE u.id = user_id 
            AND required_scope = ANY(rs.scopes)
          );
@@ -258,7 +258,7 @@ export async function initDatabase() {
                EXISTS (
                    SELECT 1 FROM users 
                    WHERE id = auth.uid()::uuid 
-                   AND 'admin' = ANY(role)
+                   AND 'admin' = ANY(role::TEXT[])
                )
            )`,
       
@@ -267,7 +267,7 @@ export async function initDatabase() {
                EXISTS (
                    SELECT 1 FROM users 
                    WHERE id = auth.uid()::uuid 
-                   AND 'admin' = ANY(role)
+                   AND 'admin' = ANY(role::TEXT[])
                )
            )`,
       
@@ -276,7 +276,7 @@ export async function initDatabase() {
                EXISTS (
                    SELECT 1 FROM users 
                    WHERE id = auth.uid()::uuid 
-                   AND 'admin' = ANY(role)
+                   AND 'admin' = ANY(role::TEXT[])
                )
            )`,
       
@@ -285,7 +285,7 @@ export async function initDatabase() {
                EXISTS (
                    SELECT 1 FROM users 
                    WHERE id = auth.uid()::uuid 
-                   AND 'admin' = ANY(role)
+                   AND 'admin' = ANY(role::TEXT[])
                )
            )`,
       
