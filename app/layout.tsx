@@ -25,7 +25,7 @@ export default function RootLayout({
               <div className="container mx-auto px-4 py-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h1 className="text-2xl font-bold text-white">
+                    <h1 className="text-xl font-bold text-white">
                       Riders Scan
                     </h1>
                   </div>
