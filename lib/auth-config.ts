@@ -63,16 +63,12 @@ export const serverAuthOptions = {
             
             // Handle PostgreSQL array format for role check
             const userRole = userData.role
-            console.log('🔍 Session callback - Database role:', userRole)
-            console.log('🔍 Session callback - Role type:', typeof userRole)
-            console.log('🔍 Session callback - Is array:', Array.isArray(userRole))
             
             // Check if user has admin role
             const isAdmin = Array.isArray(userRole) ? userRole.includes('admin') : 
                            (typeof userRole === 'string' && userRole.includes('admin'))
             
             session.user.role = isAdmin ? 'admin' : 'user'
-            console.log('🔍 Session callback - Final session role:', session.user.role)
           }
         } catch (error) {
           console.error('Error getting user session data:', error)

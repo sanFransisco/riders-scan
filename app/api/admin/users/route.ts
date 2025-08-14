@@ -7,12 +7,8 @@ export async function GET(request: NextRequest) {
   try {
     // Check authentication
     const session = await getServerSession(serverAuthOptions)
-    console.log('🔍 Admin users API - Session:', session)
-    console.log('🔍 Session user ID:', session?.user?.id)
-    console.log('🔍 Session user role:', session?.user?.role)
     
     if (!session || !session.user?.id) {
-      console.log('❌ Admin users API - No session or user ID')
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 

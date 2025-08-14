@@ -7,7 +7,7 @@ export default function SignInButton() {
 
   if (status === 'loading') {
     return (
-      <button className="px-4 py-2 text-sm text-gray-500 bg-gray-100 rounded-md">
+      <button className="px-4 py-2 text-sm text-gray-400 bg-gray-800 rounded-md">
         Loading...
       </button>
     )
@@ -16,12 +16,12 @@ export default function SignInButton() {
   if (session) {
     return (
       <div className="flex items-center gap-4">
-        <span className="text-sm text-gray-600">
+        <span className="text-sm text-gray-300">
           {session.user?.name || session.user?.email}
         </span>
         <button
           onClick={() => signOut()}
-          className="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 rounded-md"
+          className="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
         >
           Sign Out
         </button>
@@ -32,7 +32,7 @@ export default function SignInButton() {
   return (
     <button
       onClick={() => signIn('google')}
-      className="px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-md"
+      className="px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
     >
       Sign In
     </button>
