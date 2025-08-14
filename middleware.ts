@@ -22,7 +22,7 @@ export async function middleware(request: NextRequest) {
   // Handle authentication routing
   const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
   
-  // If user is not authenticated and trying to access protected routes
+  // If user is not authenticated and trying to access home page, redirect to landing
   if (!token && pathname === '/') {
     return NextResponse.redirect(new URL('/landing', request.url))
   }
