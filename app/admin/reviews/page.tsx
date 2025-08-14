@@ -120,11 +120,11 @@ export default function AdminReviewsPage() {
   }
 
   const filteredReviews = reviews.filter(review =>
-    review.driver_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (review.driver_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
     review.license_plate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    review.ride_city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    review.service?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    review.review_text?.toLowerCase().includes(searchTerm.toLowerCase())
+    (review.ride_city?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (review.service?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (review.review_text?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   )
 
   const formatDate = (dateString: string) => {
@@ -229,10 +229,10 @@ export default function AdminReviewsPage() {
                     <tr key={review.id} className="border-b hover:bg-gray-50">
                       <td className="p-3">
                         <div>
-                          <div className="font-medium">{review.driver_name}</div>
+                          <div className="font-medium">{review.driver_name || 'Unknown Driver'}</div>
                           <div className="text-sm text-gray-500">{review.license_plate}</div>
                         </div>
-                                             </td>
+                      </td>
                        <td className="p-3">
                          {review.service ? (
                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
