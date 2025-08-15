@@ -180,7 +180,7 @@ export async function initDatabase() {
       `CREATE INDEX IF NOT EXISTS idx_reviews_driver_id ON reviews(driver_id)`,
       `CREATE INDEX IF NOT EXISTS idx_reviews_user_id ON reviews(user_id)`,
       
-      // 7.5 Ensure users.role is TEXT[] (migrate from TEXT if needed). Drop policies first to avoid dependency errors.
+      // 7.5 Ensure users.role is TEXT[] (migrate from TEXT if needed) using add/rename to avoid ALTER TYPE dependency issues
       `DO $$
        DECLARE pol RECORD;
        BEGIN
@@ -188,46 +188,35 @@ export async function initDatabase() {
            SELECT 1 FROM information_schema.columns 
            WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'role' AND data_type <> 'ARRAY'
          ) THEN
-           -- Drop any existing policies on users to allow type change
-           FOR pol IN (
-             SELECT policyname FROM pg_policies WHERE schemaname = 'public' AND tablename = 'users'
-           ) LOOP
-             EXECUTE format('DROP POLICY IF EXISTS %I ON public.users', pol.policyname);
+           -- Drop policies on affected tables that may reference users.role
+           FOR pol IN (SELECT policyname FROM pg_policies WHERE schemaname = 'public' AND tablename IN ('users','drivers','reviews','role_scopes')) LOOP
+             IF pol.policyname IS NOT NULL THEN
+               EXECUTE format('DROP POLICY IF EXISTS %I ON public.users', pol.policyname);
+               EXECUTE format('DROP POLICY IF EXISTS %I ON public.drivers', pol.policyname);
+               EXECUTE format('DROP POLICY IF EXISTS %I ON public.reviews', pol.policyname);
+               EXECUTE format('DROP POLICY IF EXISTS %I ON public.role_scopes', pol.policyname);
+             END IF;
            END LOOP;
-           -- Also drop policies on related tables that might reference users.role
-           FOR pol IN (
-             SELECT policyname FROM pg_policies WHERE schemaname = 'public' AND tablename = 'drivers'
-           ) LOOP
-             EXECUTE format('DROP POLICY IF EXISTS %I ON public.drivers', pol.policyname);
-           END LOOP;
-           FOR pol IN (
-             SELECT policyname FROM pg_policies WHERE schemaname = 'public' AND tablename = 'reviews'
-           ) LOOP
-             EXECUTE format('DROP POLICY IF EXISTS %I ON public.reviews', pol.policyname);
-           END LOOP;
-           -- Temporarily disable RLS to avoid conflicts during migration
-           BEGIN
-             EXECUTE 'ALTER TABLE public.users DISABLE ROW LEVEL SECURITY';
-           EXCEPTION WHEN others THEN NULL; END;
-           BEGIN
-             EXECUTE 'ALTER TABLE public.drivers DISABLE ROW LEVEL SECURITY';
-           EXCEPTION WHEN others THEN NULL; END;
-           BEGIN
-             EXECUTE 'ALTER TABLE public.reviews DISABLE ROW LEVEL SECURITY';
-           EXCEPTION WHEN others THEN NULL; END;
+           -- Disable RLS while migrating
+           BEGIN EXECUTE 'ALTER TABLE public.users DISABLE ROW LEVEL SECURITY'; EXCEPTION WHEN others THEN NULL; END;
+           BEGIN EXECUTE 'ALTER TABLE public.drivers DISABLE ROW LEVEL SECURITY'; EXCEPTION WHEN others THEN NULL; END;
+           BEGIN EXECUTE 'ALTER TABLE public.reviews DISABLE ROW LEVEL SECURITY'; EXCEPTION WHEN others THEN NULL; END;
 
-           -- Drop incompatible default before type change
-           ALTER TABLE public.users ALTER COLUMN role DROP DEFAULT;
-           -- Convert text to text[] using safe parsing
-           ALTER TABLE public.users ALTER COLUMN role TYPE TEXT[] USING (
+           -- Add new array column, backfill from old text, then swap
+           IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='role_new') THEN
+             EXECUTE 'ALTER TABLE public.users ADD COLUMN role_new TEXT[] DEFAULT ARRAY[''user'']';
+           END IF;
+           EXECUTE $$UPDATE public.users SET role_new = (
              CASE 
-               WHEN role IS NULL OR role = '' THEN ARRAY[]::TEXT[]
+               WHEN role IS NULL OR role = '' THEN ARRAY[''user'']::TEXT[]
                WHEN role LIKE '{%' THEN string_to_array(replace(replace(role,'{',''),'}',''), ',')::TEXT[]
                ELSE string_to_array(role, ',')::TEXT[]
              END
-           );
-           -- Set new default for the array column
-           ALTER TABLE public.users ALTER COLUMN role SET DEFAULT ARRAY['user'];
+           )$$;
+           -- Drop old column and rename new
+           EXECUTE 'ALTER TABLE public.users DROP COLUMN role';
+           EXECUTE 'ALTER TABLE public.users RENAME COLUMN role_new TO role';
+           EXECUTE 'ALTER TABLE public.users ALTER COLUMN role SET DEFAULT ARRAY[''user'']';
          END IF;
        END $$;`,
       
