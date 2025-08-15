@@ -11,7 +11,10 @@ export default function LandingPage() {
 
   useEffect(() => {
     if (status === 'authenticated' && session) {
-      router.push('/')
+      const roles: string[] = ((session.user as any)?.roles as string[]) || []
+      if (roles.includes('driver')) router.push('/driver')
+      else if (roles.includes('rider')) router.push('/')
+      else router.push('/auth/onboarding')
     }
   }, [session, status, router])
 
