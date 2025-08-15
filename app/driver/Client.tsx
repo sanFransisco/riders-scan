@@ -63,17 +63,17 @@ export default function DriverClient() {
   }
 
   const startOffersPolling = () => {
-    offersTimer.current = setInterval(async () => {
+    const load = async () => {
       try {
-        const res = await fetch('/api/driver/offers')
+        const res = await fetch('/api/driver/offers', { cache: 'no-store' })
         if (res.ok) {
           const data = await res.json()
           setOffers(data.offers || [])
         }
-      } catch (e) {
-        // ignore
-      }
-    }, 2000)
+      } catch {}
+    }
+    load()
+    offersTimer.current = setInterval(load, 2000)
   }
 
   const stopOffersPolling = () => {

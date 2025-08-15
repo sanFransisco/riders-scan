@@ -23,8 +23,11 @@ export async function GET(req: NextRequest) {
                 pickup_lat, pickup_lng
          FROM rides
          WHERE driver_id = $1
-           AND status IN ('pending','consented','enroute','ontrip')
-           AND (expires_at IS NULL OR expires_at > NOW())
+           AND (
+             -- pending offers honor expiry
+             (status = 'pending' AND (expires_at IS NULL OR expires_at > NOW()))
+             OR status IN ('consented','enroute','ontrip')
+           )
          ORDER BY created_at DESC
          LIMIT 10`,
         [session.user.id]
