@@ -51,6 +51,7 @@ export default function RiderPage() {
       const { ride } = await res.json()
       if (ride?.driver_accepted_at && !ride?.rider_consented_at) {
         setRideStatus('consent')
+        // TODO: show driver analytics inline here (fetch and display)
         if (autoAcceptIn == null) {
           let seconds = 10
           setAutoAcceptIn(seconds)
