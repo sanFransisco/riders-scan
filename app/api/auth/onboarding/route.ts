@@ -13,20 +13,10 @@ export async function POST(req: NextRequest) {
     }
     const client = await pool.connect()
     try {
-      // Assume TEXT[] for role column; handle if column is still TEXT by parsing first
+      // TEXT[] only: append role if missing
       await client.query(
         `UPDATE users SET 
-           role = (
-             WITH s AS (
-               SELECT CASE
-                 WHEN pg_typeof(role)::text = '_text' THEN role
-                 WHEN role IS NULL OR role = '' THEN ARRAY[]::TEXT[]
-                 WHEN role LIKE '{%' THEN string_to_array(replace(replace(role,'{',''),'}',''), ',')::TEXT[]
-                 ELSE string_to_array(role, ',')::TEXT[]
-               END AS arr
-             )
-             SELECT CASE WHEN array_position(arr, $1) IS NULL THEN array_append(arr, $1) ELSE arr END FROM s
-           ),
+           role = CASE WHEN array_position(role, $1) IS NULL THEN array_append(role, $1) ELSE role END,
            updated_at = NOW()
          WHERE id = $2`,
         [role, session.user.id]
