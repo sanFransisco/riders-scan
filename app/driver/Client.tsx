@@ -89,6 +89,26 @@ export default function DriverClient() {
     }
   }, [online])
 
+  // Fire an initial heartbeat once when going online (before first GPS tick)
+  useEffect(() => {
+    if (!online) return
+    if (!navigator.geolocation) return
+    navigator.geolocation.getCurrentPosition((pos) => {
+      fetch('/api/driver/heartbeat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy_m: Math.round(pos.coords.accuracy || 0),
+          speed_kmh: pos.coords.speed != null ? Math.round(pos.coords.speed * 3.6) : null,
+          heading_deg: pos.coords.heading != null ? Math.round(pos.coords.heading) : null,
+          service: 'Other'
+        })
+      }).catch(() => {})
+    })
+  }, [online])
+
   const acceptOffer = async (id: string) => {
     await fetch(`/api/offers/${id}/accept`, { method: 'POST' })
   }

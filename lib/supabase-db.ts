@@ -341,6 +341,12 @@ export async function initDatabase() {
                    AND 'admin' = ANY(role::TEXT[])
                )
            )`,
+
+      // Allow server-side matching and driver console to read presence and rides
+      `CREATE POLICY IF NOT EXISTS "Anyone can read driver_presence" ON driver_presence
+           FOR SELECT USING (true)`,
+      `CREATE POLICY IF NOT EXISTS "Anyone can read rides" ON rides
+           FOR SELECT USING (true)`,
       
       // 15. Grant necessary permissions
       `GRANT ALL ON users TO authenticated`,
