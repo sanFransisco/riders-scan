@@ -1,0 +1,153 @@
+"use client"
+
+import { useEffect, useRef, useState } from 'react'
+
+interface Offer {
+  id: string
+  status: string
+  created_at: string
+  expires_at: string | null
+  pickup_lat: number | null
+  pickup_lng: number | null
+  driver_accepted_at: string | null
+  rider_consented_at: string | null
+}
+
+export default function DriverPage() {
+  const [online, setOnline] = useState(false)
+  const [offers, setOffers] = useState<Offer[]>([])
+  const watchId = useRef<number | null>(null)
+  const offersTimer = useRef<NodeJS.Timer | null>(null)
+
+  // Heartbeat helpers
+  const startHeartbeat = () => {
+    if (!navigator.geolocation) {
+      alert('Geolocation not supported')
+      return
+    }
+    watchId.current = navigator.geolocation.watchPosition(
+      (pos) => {
+        const { latitude, longitude, accuracy, speed, heading } = pos.coords
+        fetch('/api/driver/heartbeat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            lat: latitude,
+            lng: longitude,
+            accuracy_m: Math.round(accuracy || 0),
+            speed_kmh: speed != null ? Math.round(speed * 3.6) : null,
+            heading_deg: heading != null ? Math.round(heading) : null,
+          }),
+        }).catch(() => {})
+      },
+      (err) => {
+        console.error('Geolocation error', err)
+      },
+      { enableHighAccuracy: true, maximumAge: 2000, timeout: 8000 }
+    )
+  }
+
+  const stopHeartbeat = () => {
+    if (watchId.current != null) {
+      navigator.geolocation.clearWatch(watchId.current)
+      watchId.current = null
+    }
+  }
+
+  // Offers polling
+  const startOffersPolling = () => {
+    offersTimer.current = setInterval(async () => {
+      try {
+        const res = await fetch('/api/driver/offers')
+        if (res.ok) {
+          const data = await res.json()
+          setOffers(data.offers || [])
+        }
+      } catch (e) {
+        // ignore
+      }
+    }, 2000)
+  }
+
+  const stopOffersPolling = () => {
+    if (offersTimer.current) clearInterval(offersTimer.current)
+    offersTimer.current = null
+  }
+
+  useEffect(() => {
+    if (online) {
+      startHeartbeat()
+      startOffersPolling()
+    } else {
+      stopHeartbeat()
+      stopOffersPolling()
+      setOffers([])
+    }
+    return () => {
+      stopHeartbeat()
+      stopOffersPolling()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [online])
+
+  const acceptOffer = async (id: string) => {
+    await fetch(`/api/offers/${id}/accept`, { method: 'POST' })
+  }
+
+  const startRide = async (id: string) => {
+    await fetch(`/api/rides/${id}/start`, { method: 'POST' })
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Driver Console (MVP)</h1>
+        <button
+          onClick={() => setOnline((v) => !v)}
+          className="px-4 py-2 rounded-full border border-gray-300 bg-white text-black hover:bg-gray-50"
+        >
+          {online ? 'Go Offline' : 'Go Online'}
+        </button>
+      </div>
+
+      <div className="bg-white border rounded-lg p-4">
+        <h2 className="font-semibold mb-2">Incoming Offers</h2>
+        {offers.length === 0 ? (
+          <p className="text-sm text-gray-500">No offers yet.</p>
+        ) : (
+          <div className="space-y-3">
+            {offers.map((o) => (
+              <div key={o.id} className="border rounded-lg p-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-gray-600">Ride ID: {o.id.slice(0, 8)}</div>
+                    <div className="text-sm">Pickup: {o.pickup_lat?.toFixed(5)}, {o.pickup_lng?.toFixed(5)}</div>
+                    <div className="text-xs text-gray-500">Status: {o.status}</div>
+                  </div>
+                  <div className="flex gap-2">
+                    {!o.driver_accepted_at && (
+                      <button
+                        onClick={() => acceptOffer(o.id)}
+                        className="px-3 py-1.5 rounded-full border border-gray-300 bg-white hover:bg-gray-50"
+                      >
+                        Accept
+                      </button>
+                    )}
+                    {o.driver_accepted_at && (
+                      <button
+                        onClick={() => startRide(o.id)}
+                        className="px-3 py-1.5 rounded-full border border-gray-300 bg-white hover:bg-gray-50"
+                      >
+                        Start Ride
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
