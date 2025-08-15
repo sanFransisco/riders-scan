@@ -1,11 +1,9 @@
 import NextAuth from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 import { pool } from '@/lib/supabase-db'
-import { ensureDatabaseInitialized } from '@/lib/startup'
 import { serverAuthOptions } from '@/lib/auth-config'
 
-// Initialize database on startup
-ensureDatabaseInitialized()
+// Avoid initializing database on auth cold start to prevent timeouts on Vercel
 
 const authOptions = {
   ...serverAuthOptions,

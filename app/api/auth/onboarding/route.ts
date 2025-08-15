@@ -13,25 +13,44 @@ export async function POST(req: NextRequest) {
     }
     const client = await pool.connect()
     try {
-      await client.query(
-        `UPDATE users SET 
-           role = (
-             WITH arr AS (
-               SELECT (
-                 CASE 
-                   WHEN pg_typeof(role)::text = '_text' THEN role
-                   WHEN role IS NULL OR role = '' THEN ARRAY[]::TEXT[]
-                   WHEN role LIKE '{%' THEN string_to_array(replace(replace(role,'{',''),'}',''),',')::TEXT[]
-                   ELSE ARRAY[role]::TEXT[]
-                 END
-               ) AS a
-             )
-             SELECT CASE WHEN array_position(a, $1) IS NULL THEN array_append(a, $1) ELSE a END FROM arr
-           ),
-           updated_at = NOW()
-         WHERE id = $2`,
-        [role, session.user.id]
+      const typeRes = await client.query(
+        `SELECT data_type FROM information_schema.columns WHERE table_name='users' AND column_name='role' LIMIT 1`
       )
+      const dataType = typeRes.rows[0]?.data_type || 'text'
+      if (dataType === 'ARRAY') {
+        await client.query(
+          `UPDATE users SET 
+             role = (
+               WITH arr AS (
+                 SELECT (
+                   CASE 
+                     WHEN role IS NULL THEN ARRAY[]::TEXT[]
+                     ELSE role
+                   END
+                 ) AS a
+               )
+               SELECT CASE WHEN array_position(a, $1) IS NULL THEN array_append(a, $1) ELSE a END FROM arr
+             ),
+             updated_at = NOW()
+           WHERE id = $2`,
+          [role, session.user.id]
+        )
+      } else {
+        // TEXT column: maintain curly-brace string
+        await client.query(
+          `UPDATE users SET 
+             role = (
+               CASE 
+                 WHEN role IS NULL OR role = '' THEN '{' || $1 || '}'
+                 WHEN role LIKE '{%' THEN CASE WHEN role LIKE '%' || $1 || '%' THEN role ELSE regexp_replace(role, '}$', ',' || $1 || '}', 1) END
+                 ELSE '{' || role || ',' || $1 || '}'
+               END
+             ),
+             updated_at = NOW()
+           WHERE id = $2`,
+          [role, session.user.id]
+        )
+      }
       return NextResponse.json({ ok: true })
     } finally {
       client.release()
