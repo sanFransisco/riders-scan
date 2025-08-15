@@ -1,10 +1,14 @@
 "use client"
 
 import { useEffect, useRef, useState } from 'react'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 
 export default function RiderPage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
   const [matchId, setMatchId] = useState<string | null>(null)
-  const [status, setStatus] = useState<string>('idle')
+  const [rideStatus, setRideStatus] = useState<string>('idle')
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null)
   const [autoAcceptIn, setAutoAcceptIn] = useState<number | null>(null)
 
@@ -24,7 +28,7 @@ export default function RiderPage() {
       const data = await res.json()
       if (data.ok && data.matchId) {
         setMatchId(data.matchId)
-        setStatus('matching')
+        setRideStatus('matching')
         startPolling(data.matchId)
       } else {
         alert(data.message || 'No drivers nearby')
@@ -39,7 +43,7 @@ export default function RiderPage() {
       if (!res.ok) return
       const { ride } = await res.json()
       if (ride?.driver_accepted_at && !ride?.rider_consented_at) {
-        setStatus('consent')
+        setRideStatus('consent')
         if (autoAcceptIn == null) {
           let seconds = 10
           setAutoAcceptIn(seconds)
@@ -53,34 +57,39 @@ export default function RiderPage() {
           }, 1000)
         }
       } else if (ride?.status === 'ontrip') {
-        setStatus('ontrip')
+        setRideStatus('ontrip')
       }
     }, 2000)
   }
 
   const approveRide = async (id: string) => {
     await fetch(`/api/match/${id}/approve`, { method: 'POST' })
-    setStatus('enroute')
+    setRideStatus('enroute')
   }
 
   const declineRide = async (id: string) => {
     await fetch(`/api/match/${id}/decline`, { method: 'POST' })
-    setStatus('idle')
+    setRideStatus('idle')
     setMatchId(null)
     if (pollTimer.current) clearInterval(pollTimer.current)
   }
 
   useEffect(() => {
+    if (status === 'loading') return
+    const roles: string[] = (session?.user as any)?.roles || []
+    if (!session) router.push('/auth/signin')
+    else if (!roles.includes('rider')) router.push('/auth/onboarding')
     return () => {
       if (pollTimer.current) clearInterval(pollTimer.current)
     }
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, status])
 
   return (
     <div className="max-w-2xl mx-auto p-6 space-y-6">
       <h1 className="text-2xl font-bold">Rider Console (MVP)</h1>
 
-      {status === 'idle' && (
+      {rideStatus === 'idle' && (
         <button
           onClick={requestRide}
           className="px-4 py-2 rounded-full border border-gray-300 bg-white text-black hover:bg-gray-50"
@@ -89,9 +98,9 @@ export default function RiderPage() {
         </button>
       )}
 
-      {status === 'matching' && <p>Looking for a driver...</p>}
+      {rideStatus === 'matching' && <p>Looking for a driver...</p>}
 
-      {status === 'consent' && matchId && (
+      {rideStatus === 'consent' && matchId && (
         <div className="bg-white border rounded-lg p-4">
           <p className="mb-3">Driver assigned. Start ride?</p>
           <div className="flex gap-2">
@@ -111,8 +120,8 @@ export default function RiderPage() {
         </div>
       )}
 
-      {status === 'enroute' && <p>Driver on the way…</p>}
-      {status === 'ontrip' && <p>Ride in progress…</p>}
+      {rideStatus === 'enroute' && <p>Driver on the way…</p>}
+      {rideStatus === 'ontrip' && <p>Ride in progress…</p>}
     </div>
   )
 }
