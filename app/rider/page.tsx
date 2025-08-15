@@ -86,6 +86,25 @@ export default function RiderPage() {
     const roles: string[] = (session?.user as any)?.roles || []
     if (!session) router.push('/auth/signin')
     else if (!roles.includes('rider')) router.push('/auth/onboarding')
+    // Restore active ride if exists (after refresh)
+    ;(async () => {
+      if (!session) return
+      const res = await fetch('/api/rides/active', { cache: 'no-store' })
+      if (res.ok) {
+        const { ride } = await res.json()
+        if (ride?.id) {
+          setMatchId(ride.id)
+          if (ride.status === 'pending' || ride.status === 'consented') {
+            setRideStatus('matching')
+            startPolling(ride.id)
+          } else if (ride.status === 'ontrip') {
+            setRideStatus('ontrip')
+          } else if (ride.status === 'enroute') {
+            setRideStatus('enroute')
+          }
+        }
+      }
+    })()
     return () => {
       if (pollTimer.current) clearInterval(pollTimer.current)
     }
