@@ -57,13 +57,7 @@ export const serverAuthOptions = {
           if (userResult.rows.length > 0) {
             const userData = userResult.rows[0]
             session.user.id = userData.id
-            const roles = Array.isArray(userData.role)
-              ? userData.role
-              : typeof userData.role === 'string' && userData.role.startsWith('{')
-              ? userData.role.replace(/[{}]/g, '').split(',').map((r: string) => r.trim()).filter(Boolean)
-              : typeof userData.role === 'string' && userData.role.length > 0
-              ? userData.role.split(',').map((r: string) => r.replace(/[{}]/g, '').trim()).filter(Boolean)
-              : []
+            const roles = Array.isArray(userData.role) ? userData.role : []
             ;
             // Convenience flags
             const isAdmin = roles.includes('admin')

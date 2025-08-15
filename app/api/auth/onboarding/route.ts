@@ -13,12 +13,8 @@ export async function POST(req: NextRequest) {
     }
     const client = await pool.connect()
     try {
-      const typeRes = await client.query(
-        `SELECT data_type, udt_name FROM information_schema.columns WHERE table_name='users' AND column_name='role' LIMIT 1`
-      )
-      const dataType = (typeRes.rows[0]?.data_type || 'text').toUpperCase()
-      const udt = (typeRes.rows[0]?.udt_name || '').toLowerCase()
-      if (dataType.includes('ARRAY') || udt === '_text') {
+      // Assume TEXT[] for role column
+      {
         await client.query(
           `UPDATE users SET 
              role = (
@@ -31,21 +27,6 @@ export async function POST(req: NextRequest) {
                  ) AS a
                )
                SELECT CASE WHEN array_position(a, $1) IS NULL THEN array_append(a, $1) ELSE a END FROM arr
-             ),
-             updated_at = NOW()
-           WHERE id = $2`,
-          [role, session.user.id]
-        )
-      } else {
-        // TEXT column: maintain curly-brace string
-        await client.query(
-          `UPDATE users SET 
-             role = (
-               CASE 
-                 WHEN role IS NULL OR role = '' THEN '{' || $1 || '}'
-                 WHEN role LIKE '{%' THEN CASE WHEN role LIKE '%' || $1 || '%' THEN role ELSE regexp_replace(role, '}$', ',' || $1 || '}', 1) END
-                 ELSE '{' || role || ',' || $1 || '}'
-               END
              ),
              updated_at = NOW()
            WHERE id = $2`,

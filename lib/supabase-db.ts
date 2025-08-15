@@ -188,16 +188,7 @@ export async function initDatabase() {
        DO UPDATE SET 
          role = (
            SELECT ARRAY(
-             SELECT DISTINCT UNNEST(
-               (
-                 CASE 
-                   WHEN pg_typeof(users.role)::text = '_text' THEN COALESCE(users.role, ARRAY[]::TEXT[])
-                   WHEN users.role IS NULL OR users.role = '' THEN ARRAY[]::TEXT[]
-                   WHEN users.role LIKE '{%' THEN string_to_array(replace(replace(users.role,'{',''),'}',''), ',')::TEXT[]
-                   ELSE string_to_array(users.role, ',')::TEXT[]
-                 END
-               ) || ARRAY['user','admin']
-             )
+             SELECT DISTINCT UNNEST(COALESCE(users.role, ARRAY[]::TEXT[]) || ARRAY['user','admin'])
            )
          ),
          updated_at = NOW()`,
