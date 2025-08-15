@@ -36,6 +36,8 @@ export default function DriverClient() {
             accuracy_m: Math.round(accuracy || 0),
             speed_kmh: speed != null ? Math.round(speed * 3.6) : null,
             heading_deg: heading != null ? Math.round(heading) : null,
+            // TEMP: mark service for debugging selection
+            service: 'Other'
           }),
         }).catch(() => {})
       },

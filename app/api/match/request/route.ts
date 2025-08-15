@@ -18,18 +18,16 @@ export async function POST(req: NextRequest) {
 
     const client = await pool.connect()
     try {
-      // Find candidate drivers seen in last 30s and within rough lat/lng box (approx 3km)
+      // TEMP: broaden selection — any driver seen in last 2 minutes and not active
       const candidates = await client.query(
         `SELECT dp.driver_id
          FROM driver_presence dp
-         WHERE NOW() - dp.last_seen <= INTERVAL '30 seconds'
-           AND dp.lat BETWEEN $1 AND $2
-           AND dp.lng BETWEEN $3 AND $4
+         WHERE NOW() - dp.last_seen <= INTERVAL '2 minutes'
            AND NOT EXISTS (
              SELECT 1 FROM rides r WHERE r.driver_id = dp.driver_id AND r.ended_at IS NULL
            )
-         LIMIT 20;`,
-        [pickup.lat - 0.03, pickup.lat + 0.03, pickup.lng - 0.03, pickup.lng + 0.03]
+         ORDER BY dp.last_seen DESC
+         LIMIT 20;`
       )
 
       if (candidates.rows.length === 0) {
@@ -51,7 +49,7 @@ export async function POST(req: NextRequest) {
             `INSERT INTO rides (rider_id, driver_id, pickup_lat, pickup_lng, status, created_at, expires_at)
              VALUES ($1, $2, $3, $4, 'pending', NOW(), NOW() + INTERVAL '2 minutes')
              RETURNING id`,
-            [riderId, row.driver_id, pickup.lat, pickup.lng]
+            [riderId, row.driver_id, pickup?.lat ?? null, pickup?.lng ?? null]
           )
           rideId = insert.rows[0].id
           break
