@@ -1,6 +1,8 @@
 "use client"
 
 import { useEffect, useRef, useState } from 'react'
+import DriverOverlay from '@/components/DriverOverlay'
+import type { DriverAnalytics } from '@/lib/supabase-db'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
@@ -10,6 +12,8 @@ export default function RiderPage() {
   const [matchId, setMatchId] = useState<string | null>(null)
   const [rideStatus, setRideStatus] = useState<string>('idle')
   const [consentDriver, setConsentDriver] = useState<{ license_plate?: string; full_name?: string } | null>(null)
+  const [overlayDriver, setOverlayDriver] = useState<DriverAnalytics | null>(null)
+  const [overlayOpen, setOverlayOpen] = useState(false)
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null)
   const [autoAcceptIn, setAutoAcceptIn] = useState<number | null>(null)
 
@@ -139,6 +143,27 @@ export default function RiderPage() {
             </div>
           )}
           <div className="flex gap-2">
+            {consentDriver?.license_plate && (
+              <button
+                onClick={async () => {
+                  try {
+                    // Fetch by license plate -> first get driver id
+                    const res = await fetch(`/api/drivers?q=${encodeURIComponent(consentDriver.license_plate)}`)
+                    if (res.ok) {
+                      const list = await res.json()
+                      if (Array.isArray(list) && list.length > 0) {
+                        const driver = list[0] as DriverAnalytics
+                        setOverlayDriver(driver)
+                        setOverlayOpen(true)
+                      }
+                    }
+                  } catch {}
+                }}
+                className="px-4 py-2 rounded-full border border-gray-300 bg-white hover:bg-gray-50"
+              >
+                View analytics
+              </button>
+            )}
             <button
               onClick={() => approveRide(matchId)}
               className="px-4 py-2 rounded-full border border-gray-300 bg-white hover:bg-gray-50"
@@ -157,6 +182,10 @@ export default function RiderPage() {
 
       {rideStatus === 'enroute' && <p>Driver on the way…</p>}
       {rideStatus === 'ontrip' && <p>Ride in progress…</p>}
+
+      {overlayOpen && overlayDriver && (
+        <DriverOverlay driver={overlayDriver} onClose={() => setOverlayOpen(false)} />
+      )}
     </div>
   )
 }
