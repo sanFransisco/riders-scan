@@ -12,9 +12,7 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json()
     const { pickup, dropoff, service } = body || {}
-    if (!pickup?.lat || !pickup?.lng) {
-      return NextResponse.json({ error: 'pickup.lat/lng required' }, { status: 400 })
-    }
+    // Allow missing pickup; server can still match on recent presence.
 
     const client = await pool.connect()
     try {
