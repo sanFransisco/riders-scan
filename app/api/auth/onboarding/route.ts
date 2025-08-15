@@ -16,19 +16,17 @@ export async function POST(req: NextRequest) {
       await client.query(
         `UPDATE users SET 
            role = (
-             CASE
-               WHEN role IS NULL THEN ARRAY[$1]::TEXT[]
-               WHEN pg_typeof(role)::text = 'text' THEN (
+             WITH arr AS (
+               SELECT (
                  CASE 
+                   WHEN pg_typeof(role)::text = '_text' THEN role
+                   WHEN role IS NULL OR role = '' THEN ARRAY[]::TEXT[]
                    WHEN role LIKE '{%' THEN string_to_array(replace(replace(role,'{',''),'}',''),',')::TEXT[]
                    ELSE ARRAY[role]::TEXT[]
                  END
-               )
-               WHEN pg_typeof(role)::text = '_text' THEN (
-                 CASE WHEN NOT ($1 = ANY(role)) THEN array_append(role, $1) ELSE role END
-               )
-               ELSE ARRAY[$1]::TEXT[]
-             END
+               ) AS a
+             )
+             SELECT CASE WHEN array_position(a, $1) IS NULL THEN array_append(a, $1) ELSE a END FROM arr
            ),
            updated_at = NOW()
          WHERE id = $2`,
