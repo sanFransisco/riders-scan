@@ -44,7 +44,7 @@ export default function DriverClient() {
       (err) => {
         console.error('Geolocation error', err)
       },
-      { enableHighAccuracy: true, maximumAge: 2000, timeout: 8000 }
+      { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 }
     )
   }
 

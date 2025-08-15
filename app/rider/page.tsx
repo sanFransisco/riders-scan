@@ -37,24 +37,7 @@ export default function RiderPage() {
       },
       async (err) => {
         console.error('Geolocation error', err)
-        // Fallback: attempt matching without coordinates (server uses presence within last 2 minutes)
-        const res = await fetch('/api/match/request', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pickup: null, dropoff: null, service: null }),
-        })
-        try {
-          const data = await res.json()
-          if (data.ok && data.matchId) {
-            setMatchId(data.matchId)
-            setRideStatus('matching')
-            startPolling(data.matchId)
-          } else {
-            alert(data.message || 'No drivers nearby (no GPS)')
-          }
-        } catch {
-          alert('Failed to request ride')
-        }
+        alert('Location required to request a ride. Please enable GPS and try again.')
       },
       { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
     )
