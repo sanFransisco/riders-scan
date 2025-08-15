@@ -354,6 +354,78 @@ export async function initDatabase() {
       await client.query('UPDATE schema_version SET version = 3, updated_at = NOW() WHERE id = 1')
       console.log('✅ Applied migration to version 3')
     }
+    
+    if (currentVersion < 4) {
+      // Version 4: PostGIS + driver_presence and rides tables
+      await client.query(`
+        -- Enable PostGIS
+        CREATE EXTENSION IF NOT EXISTS postgis;
+      `)
+      
+      // driver_presence (no status field; availability derived from rides + last_seen)
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS driver_presence (
+          driver_id UUID PRIMARY KEY,
+          user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          lat DOUBLE PRECISION NOT NULL,
+          lng DOUBLE PRECISION NOT NULL,
+          geom GEOGRAPHY(Point, 4326)
+            GENERATED ALWAYS AS (ST_SetSRID(ST_MakePoint(lng, lat), 4326)::geography) STORED,
+          last_seen TIMESTAMP NOT NULL DEFAULT NOW(),
+          -- optional, all nullable
+          service TEXT,
+          accuracy_m INT,
+          speed_kmh INT,
+          heading_deg SMALLINT,
+          device_os TEXT,
+          app_version TEXT,
+          battery_pct SMALLINT
+        );
+      `)
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_driver_presence_last_seen ON driver_presence(last_seen);
+        CREATE INDEX IF NOT EXISTS idx_driver_presence_geom ON driver_presence USING GIST(geom);
+      `)
+      
+      // rides table (source of truth for active ride)
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS rides (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          rider_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          driver_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          pickup GEOGRAPHY(Point, 4326),
+          dropoff GEOGRAPHY(Point, 4326),
+          status TEXT NOT NULL CHECK (status IN ('pending','consented','enroute','ontrip','completed','canceled')),
+          created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+          started_at TIMESTAMP,
+          ended_at TIMESTAMP
+        );
+      `)
+      await client.query(`
+        CREATE UNIQUE INDEX IF NOT EXISTS ux_rides_driver_active ON rides(driver_id) WHERE ended_at IS NULL;
+        CREATE UNIQUE INDEX IF NOT EXISTS ux_rides_rider_active ON rides(rider_id) WHERE ended_at IS NULL;
+      `)
+      
+      // RLS for driver_presence: drivers can upsert only their row
+      await client.query(`
+        DO $$
+        BEGIN
+          EXECUTE 'ALTER TABLE driver_presence ENABLE ROW LEVEL SECURITY';
+        EXCEPTION WHEN others THEN NULL;
+        END $$;
+      `)
+      await client.query(`
+        CREATE POLICY IF NOT EXISTS driver_presence_self_insert ON driver_presence
+          FOR INSERT WITH CHECK (user_id = auth.uid()::uuid);
+      `)
+      await client.query(`
+        CREATE POLICY IF NOT EXISTS driver_presence_self_update ON driver_presence
+          FOR UPDATE USING (user_id = auth.uid()::uuid);
+      `)
+      
+      await client.query('UPDATE schema_version SET version = 4, updated_at = NOW() WHERE id = 1')
+      console.log('✅ Applied migration to version 4 (PostGIS + presence + rides)')
+    }
 
     client.release()
     console.log('🎉 Database setup completed successfully! You are now an admin with role-based scopes.')
