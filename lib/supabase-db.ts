@@ -49,6 +49,7 @@ export const pool = createPool()
 
 export interface Driver {
   id: string;
+  user_id?: string;
   full_name?: string;
   license_plate: string;
   created_at: Date;

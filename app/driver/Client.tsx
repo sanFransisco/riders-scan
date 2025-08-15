@@ -173,7 +173,7 @@ export default function DriverClient() {
                         Accept
                       </button>
                     )}
-                    {o.status !== 'ontrip' && o.driver_accepted_at && (
+                    {o.status === 'consented' && o.driver_accepted_at && (
                       <button
                         onClick={() => startRide(o.id)}
                         className="px-3 py-1.5 rounded-full border border-gray-300 bg-white hover:bg-gray-50"
