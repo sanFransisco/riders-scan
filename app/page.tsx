@@ -10,5 +10,13 @@ export default async function HomePage() {
     redirect('/landing')
   }
 
+  // If user has no role yet, send to onboarding
+  const roles: string[] = Array.isArray((session?.user as any)?.roles)
+    ? ((session?.user as any)?.roles as string[])
+    : []
+  if (roles.length === 0) {
+    redirect('/auth/onboarding')
+  }
+
   return <HomePageClient />
 }

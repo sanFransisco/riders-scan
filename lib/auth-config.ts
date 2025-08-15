@@ -23,9 +23,9 @@ export const serverAuthOptions = {
           )
 
           if (existingUser.rows.length === 0) {
-            // Create new user with default rider role
+            // Create new user with baseline 'user' only (no rider/driver). Onboarding will set role.
             await client.query(
-              `INSERT INTO users (email, name, role) VALUES ($1, $2, ARRAY['rider']::TEXT[])`,
+              `INSERT INTO users (email, name) VALUES ($1, $2)`,
               [user.email, user.name]
             )
           } else {
