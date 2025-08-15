@@ -16,8 +16,8 @@ export async function POST(req: NextRequest) {
       const typeRes = await client.query(
         `SELECT data_type FROM information_schema.columns WHERE table_name='users' AND column_name='role' LIMIT 1`
       )
-      const dataType = typeRes.rows[0]?.data_type || 'text'
-      if (dataType === 'ARRAY') {
+      const dataType = (typeRes.rows[0]?.data_type || 'text').toUpperCase()
+      if (dataType.includes('ARRAY')) {
         await client.query(
           `UPDATE users SET 
              role = (

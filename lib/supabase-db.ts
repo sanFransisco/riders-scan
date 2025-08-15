@@ -181,11 +181,18 @@ export async function initDatabase() {
       `CREATE INDEX IF NOT EXISTS idx_reviews_user_id ON reviews(user_id)`,
       
       // 8. Insert yourself as admin (replace with your email)
+      // Preserve any existing roles and ensure 'user' and 'admin' are present without overwriting others
       `INSERT INTO users (email, name, role) 
        VALUES ('yalibar1121@gmail.com', 'Yali', ARRAY['user', 'admin'])
        ON CONFLICT (email) 
        DO UPDATE SET 
-         role = ARRAY['user', 'admin'],
+         role = (
+           SELECT ARRAY(
+             SELECT DISTINCT UNNEST(
+               COALESCE(users.role, ARRAY[]::TEXT[]) || ARRAY['user','admin']
+             )
+           )
+         ),
          updated_at = NOW()`,
       
       // 9. Create a function to update updated_at timestamp

@@ -5,8 +5,8 @@ import { getToken } from 'next-auth/jwt'
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Initialize database on first request
-  if (pathname === '/') {
+  // Initialize database on first request in development only
+  if (process.env.NODE_ENV === 'development' && pathname === '/') {
     try {
       await fetch(`${request.nextUrl.origin}/api/init`, {
         method: 'POST',
