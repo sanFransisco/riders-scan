@@ -10,6 +10,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const roles: string[] = ((session.user as any)?.roles as string[]) || []
+    if (!roles.includes('driver')) {
+      return NextResponse.json({ error: 'Forbidden: driver role required' }, { status: 403 })
+    }
+
     const client = await pool.connect()
     try {
       const res = await client.query(

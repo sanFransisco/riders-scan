@@ -10,6 +10,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const roles: string[] = ((session.user as any)?.roles as string[]) || []
+    if (!roles.includes('driver')) {
+      return NextResponse.json({ error: 'Forbidden: driver role required' }, { status: 403 })
+    }
+
     const body = await req.json()
     const { lat, lng, service, accuracy_m, speed_kmh, heading_deg, device_os, app_version, battery_pct } = body || {}
 

@@ -1,11 +1,27 @@
 "use client"
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSession } from 'next-auth/react'
 
 export default function OnboardingPage() {
   const router = useRouter()
+  const { data: session, status } = useSession()
   const [saving, setSaving] = useState(false)
+
+  // If the user already has a role, send them away immediately
+  useEffect(() => {
+    if (status === 'loading') return
+    const roles: string[] = (session?.user as any)?.roles || []
+    if (!session) {
+      router.replace('/auth/signin')
+    } else if (roles.includes('driver')) {
+      router.replace('/driver')
+    } else if (roles.includes('rider')) {
+      router.replace('/')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, status])
 
   const choose = async (role: 'rider' | 'driver') => {
     setSaving(true)
