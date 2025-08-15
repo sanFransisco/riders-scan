@@ -427,6 +427,28 @@ export async function initDatabase() {
       console.log('✅ Applied migration to version 4 (PostGIS + presence + rides)')
     }
 
+    if (currentVersion < 5) {
+      // Version 5: consent timestamps on rides
+      await client.query(`
+        DO $$ BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name='rides' AND column_name='driver_accepted_at'
+          ) THEN ALTER TABLE rides ADD COLUMN driver_accepted_at TIMESTAMP; END IF;
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name='rides' AND column_name='rider_consented_at'
+          ) THEN ALTER TABLE rides ADD COLUMN rider_consented_at TIMESTAMP; END IF;
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name='rides' AND column_name='expires_at'
+          ) THEN ALTER TABLE rides ADD COLUMN expires_at TIMESTAMP; END IF;
+        END $$;
+      `)
+      await client.query('UPDATE schema_version SET version = 5, updated_at = NOW() WHERE id = 1')
+      console.log('✅ Applied migration to version 5 (rides consent timestamps)')
+    }
+
     client.release()
     console.log('🎉 Database setup completed successfully! You are now an admin with role-based scopes.')
   } catch (error) {
