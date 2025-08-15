@@ -25,12 +25,12 @@ export async function POST(req: NextRequest) {
     try {
       // Rectangle selection (~3km) and seen in last 30s
       const presenceWindow = await client.query(
-        `SELECT COUNT(*)::int AS c FROM driver_presence WHERE NOW() - last_seen <= INTERVAL '30 seconds'`
+        `SELECT COUNT(*)::int AS c FROM driver_presence WHERE NOW() - last_seen <= INTERVAL '2 minutes'`
       )
       const candidates = await client.query(
         `SELECT dp.driver_id
          FROM driver_presence dp
-         WHERE NOW() - dp.last_seen <= INTERVAL '30 seconds'
+         WHERE NOW() - dp.last_seen <= INTERVAL '2 minutes'
            AND dp.lat BETWEEN $1 AND $2
            AND dp.lng BETWEEN $3 AND $4
            AND NOT EXISTS (

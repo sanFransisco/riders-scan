@@ -18,6 +18,8 @@ export default function DriverClient() {
   const [offers, setOffers] = useState<Offer[]>([])
   const watchId = useRef<number | null>(null)
   const offersTimer = useRef<ReturnType<typeof setInterval> | null>(null)
+  const heartbeatTimer = useRef<ReturnType<typeof setInterval> | null>(null)
+  const lastCoords = useRef<{ lat: number; lng: number } | null>(null)
 
   const startHeartbeat = () => {
     if (!navigator.geolocation) {
@@ -27,6 +29,7 @@ export default function DriverClient() {
     watchId.current = navigator.geolocation.watchPosition(
       (pos) => {
         const { latitude, longitude, accuracy, speed, heading } = pos.coords
+        lastCoords.current = { lat: latitude, lng: longitude }
         fetch('/api/driver/heartbeat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -53,6 +56,10 @@ export default function DriverClient() {
       navigator.geolocation.clearWatch(watchId.current)
       watchId.current = null
     }
+    if (heartbeatTimer.current) {
+      clearInterval(heartbeatTimer.current)
+      heartbeatTimer.current = null
+    }
   }
 
   const startOffersPolling = () => {
@@ -78,6 +85,16 @@ export default function DriverClient() {
     if (online) {
       startHeartbeat()
       startOffersPolling()
+      // Keep last_seen fresh even if position doesn't change (browser throttling)
+      heartbeatTimer.current = setInterval(() => {
+        const lc = lastCoords.current
+        if (!lc) return
+        fetch('/api/driver/heartbeat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lat: lc.lat, lng: lc.lng, service: 'Other' }),
+        }).catch(() => {})
+      }, 10000)
     } else {
       stopHeartbeat()
       stopOffersPolling()
