@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 export default function RiderPage() {
   const [matchId, setMatchId] = useState<string | null>(null)
   const [status, setStatus] = useState<string>('idle')
-  const pollTimer = useRef<NodeJS.Timer | null>(null)
+  const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null)
   const [autoAcceptIn, setAutoAcceptIn] = useState<number | null>(null)
 
   const requestRide = async () => {
@@ -43,7 +43,7 @@ export default function RiderPage() {
         if (autoAcceptIn == null) {
           let seconds = 10
           setAutoAcceptIn(seconds)
-          const t = setInterval(() => {
+          const t: ReturnType<typeof setInterval> = setInterval(() => {
             seconds -= 1
             setAutoAcceptIn(seconds)
             if (seconds <= 0) {
