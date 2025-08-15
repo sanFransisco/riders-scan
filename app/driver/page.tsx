@@ -17,7 +17,7 @@ export default function DriverPage() {
   const [online, setOnline] = useState(false)
   const [offers, setOffers] = useState<Offer[]>([])
   const watchId = useRef<number | null>(null)
-  const offersTimer = useRef<NodeJS.Timer | null>(null)
+  const offersTimer = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // Heartbeat helpers
   const startHeartbeat = () => {
