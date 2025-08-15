@@ -14,10 +14,11 @@ export async function POST(req: NextRequest) {
     const client = await pool.connect()
     try {
       const typeRes = await client.query(
-        `SELECT data_type FROM information_schema.columns WHERE table_name='users' AND column_name='role' LIMIT 1`
+        `SELECT data_type, udt_name FROM information_schema.columns WHERE table_name='users' AND column_name='role' LIMIT 1`
       )
       const dataType = (typeRes.rows[0]?.data_type || 'text').toUpperCase()
-      if (dataType.includes('ARRAY')) {
+      const udt = (typeRes.rows[0]?.udt_name || '').toLowerCase()
+      if (dataType.includes('ARRAY') || udt === '_text') {
         await client.query(
           `UPDATE users SET 
              role = (
