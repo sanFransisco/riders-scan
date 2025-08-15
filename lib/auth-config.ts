@@ -60,9 +60,9 @@ export const serverAuthOptions = {
             const roles = Array.isArray(userData.role)
               ? userData.role
               : typeof userData.role === 'string' && userData.role.startsWith('{')
-              ? userData.role.replace(/[{}]/g, '').split(',').map(r => r.trim()).filter(Boolean)
+              ? userData.role.replace(/[{}]/g, '').split(',').map((r: string) => r.trim()).filter(Boolean)
               : typeof userData.role === 'string' && userData.role.length > 0
-              ? userData.role.split(',').map(r => r.replace(/[{}]/g, '').trim()).filter(Boolean)
+              ? userData.role.split(',').map((r: string) => r.replace(/[{}]/g, '').trim()).filter(Boolean)
               : []
             ;
             // Convenience flags
