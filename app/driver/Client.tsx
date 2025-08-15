@@ -16,6 +16,8 @@ interface Offer {
 export default function DriverClient() {
   const [online, setOnline] = useState(false)
   const [offers, setOffers] = useState<Offer[]>([])
+  const [licensePlate, setLicensePlate] = useState('')
+  const [hasProfile, setHasProfile] = useState<boolean | null>(null)
   const watchId = useRef<number | null>(null)
   const offersTimer = useRef<ReturnType<typeof setInterval> | null>(null)
   const heartbeatTimer = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -82,6 +84,21 @@ export default function DriverClient() {
   }
 
   useEffect(() => {
+    // Load driver profile to ensure license plate is set
+    ;(async () => {
+      try {
+        const res = await fetch('/api/driver/profile', { cache: 'no-store' })
+        if (res.ok) {
+          const data = await res.json()
+          setHasProfile(!!data.driver)
+          if (data.driver?.license_plate) setLicensePlate(data.driver.license_plate)
+        } else {
+          setHasProfile(false)
+        }
+      } catch {
+        setHasProfile(false)
+      }
+    })()
     if (online) {
       startHeartbeat()
       startOffersPolling()
@@ -105,6 +122,20 @@ export default function DriverClient() {
       stopOffersPolling()
     }
   }, [online])
+
+  const saveProfile = async () => {
+    if (!/^\d{7}$/.test(licensePlate)) {
+      alert('Enter 7-digit license number')
+      return
+    }
+    const res = await fetch('/api/driver/onboarding', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ license_plate: licensePlate }),
+    })
+    if (res.ok) setHasProfile(true)
+    else alert('Failed to save')
+  }
 
   // Fire an initial heartbeat once when going online (before first GPS tick)
   useEffect(() => {
@@ -140,6 +171,24 @@ export default function DriverClient() {
 
   return (
     <div className="max-w-2xl mx-auto p-6 space-y-6">
+      {hasProfile === false && (
+        <div className="bg-white border rounded-lg p-4">
+          <h2 className="font-semibold mb-2">Driver setup</h2>
+          <div className="flex items-center gap-2">
+            <input
+              value={licensePlate}
+              onChange={(e) => setLicensePlate(e.target.value)}
+              placeholder="7-digit license number"
+              maxLength={7}
+              pattern="^\\d{7}$"
+              className="px-3 py-2 border rounded-md"
+            />
+            <button onClick={saveProfile} className="px-3 py-2 rounded-full border border-gray-300 bg-white hover:bg-gray-50">
+              Save
+            </button>
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Driver Console (MVP)</h1>
         <button
