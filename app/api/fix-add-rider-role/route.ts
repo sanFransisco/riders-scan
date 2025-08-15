@@ -13,6 +13,8 @@ export async function POST(_req: NextRequest) {
             SELECT 1 FROM information_schema.columns 
             WHERE table_name='users' AND column_name='role' AND data_type <> 'ARRAY'
           ) THEN
+            -- drop default first to avoid cast errors
+            ALTER TABLE users ALTER COLUMN role DROP DEFAULT;
             ALTER TABLE users 
             ALTER COLUMN role TYPE TEXT[]
             USING (

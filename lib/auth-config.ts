@@ -29,17 +29,9 @@ export const serverAuthOptions = {
               [user.email, user.name]
             )
           } else {
-            // Update existing user - ensure 'rider' role present
+            // Update existing user name only; role adjustments handled by onboarding/fixer
             await client.query(
-              `UPDATE users 
-               SET name = $1,
-                   role = CASE 
-                     WHEN role IS NULL OR array_length(role,1) = 0 THEN ARRAY['rider']::TEXT[]
-                     WHEN NOT ('rider' = ANY(role)) THEN array_append(role, 'rider')
-                     ELSE role
-                   END,
-                   updated_at = NOW()
-               WHERE email = $2`,
+              `UPDATE users SET name = $1, updated_at = NOW() WHERE email = $2`,
               [user.name, user.email]
             )
           }
