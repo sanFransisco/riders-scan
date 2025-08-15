@@ -194,9 +194,26 @@ export async function initDatabase() {
            ) LOOP
              EXECUTE format('DROP POLICY IF EXISTS %I ON public.users', pol.policyname);
            END LOOP;
+           -- Also drop policies on related tables that might reference users.role
+           FOR pol IN (
+             SELECT policyname FROM pg_policies WHERE schemaname = 'public' AND tablename = 'drivers'
+           ) LOOP
+             EXECUTE format('DROP POLICY IF EXISTS %I ON public.drivers', pol.policyname);
+           END LOOP;
+           FOR pol IN (
+             SELECT policyname FROM pg_policies WHERE schemaname = 'public' AND tablename = 'reviews'
+           ) LOOP
+             EXECUTE format('DROP POLICY IF EXISTS %I ON public.reviews', pol.policyname);
+           END LOOP;
            -- Temporarily disable RLS to avoid conflicts during migration
            BEGIN
              EXECUTE 'ALTER TABLE public.users DISABLE ROW LEVEL SECURITY';
+           EXCEPTION WHEN others THEN NULL; END;
+           BEGIN
+             EXECUTE 'ALTER TABLE public.drivers DISABLE ROW LEVEL SECURITY';
+           EXCEPTION WHEN others THEN NULL; END;
+           BEGIN
+             EXECUTE 'ALTER TABLE public.reviews DISABLE ROW LEVEL SECURITY';
            EXCEPTION WHEN others THEN NULL; END;
 
            -- Drop incompatible default before type change
@@ -288,19 +305,19 @@ export async function initDatabase() {
       `CREATE POLICY IF NOT EXISTS "Users can update own data" ON users
            FOR UPDATE USING (auth.uid()::text = id::text)`,
       
-      `CREATE POLICY "Anyone can read drivers" ON drivers
+      `CREATE POLICY IF NOT EXISTS "Anyone can read drivers" ON drivers
            FOR SELECT USING (true)`,
       
-      `CREATE POLICY "Anyone can read reviews" ON reviews
+      `CREATE POLICY IF NOT EXISTS "Anyone can read reviews" ON reviews
            FOR SELECT USING (true)`,
       
-      `CREATE POLICY "Authenticated users can create reviews" ON reviews
+      `CREATE POLICY IF NOT EXISTS "Authenticated users can create reviews" ON reviews
            FOR INSERT WITH CHECK (auth.uid() IS NOT NULL)`,
       
-      `CREATE POLICY "Users can manage own reviews" ON reviews
+      `CREATE POLICY IF NOT EXISTS "Users can manage own reviews" ON reviews
            FOR ALL USING (auth.uid()::text = user_id::text)`,
       
-      `CREATE POLICY "Admins can manage all users" ON users
+      `CREATE POLICY IF NOT EXISTS "Admins can manage all users" ON users
            FOR ALL USING (
                EXISTS (
                    SELECT 1 FROM users 
@@ -309,7 +326,7 @@ export async function initDatabase() {
                )
            )`,
       
-      `CREATE POLICY "Admins can manage all drivers" ON drivers
+      `CREATE POLICY IF NOT EXISTS "Admins can manage all drivers" ON drivers
            FOR ALL USING (
                EXISTS (
                    SELECT 1 FROM users 
@@ -318,7 +335,7 @@ export async function initDatabase() {
                )
            )`,
       
-      `CREATE POLICY "Admins can manage all reviews" ON reviews
+      `CREATE POLICY IF NOT EXISTS "Admins can manage all reviews" ON reviews
            FOR ALL USING (
                EXISTS (
                    SELECT 1 FROM users 
@@ -327,7 +344,7 @@ export async function initDatabase() {
                )
            )`,
       
-      `CREATE POLICY "Only admins can manage role scopes" ON role_scopes
+      `CREATE POLICY IF NOT EXISTS "Only admins can manage role scopes" ON role_scopes
            FOR ALL USING (
                EXISTS (
                    SELECT 1 FROM users 
