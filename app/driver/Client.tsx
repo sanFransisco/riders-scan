@@ -134,6 +134,10 @@ export default function DriverClient() {
     await fetch(`/api/rides/${id}/start`, { method: 'POST' })
   }
 
+  const completeRide = async (id: string) => {
+    await fetch(`/api/rides/${id}/complete`, { method: 'POST' })
+  }
+
   return (
     <div className="max-w-2xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -169,12 +173,20 @@ export default function DriverClient() {
                         Accept
                       </button>
                     )}
-                    {o.driver_accepted_at && (
+                    {o.status !== 'ontrip' && o.driver_accepted_at && (
                       <button
                         onClick={() => startRide(o.id)}
                         className="px-3 py-1.5 rounded-full border border-gray-300 bg-white hover:bg-gray-50"
                       >
                         Start Ride
+                      </button>
+                    )}
+                    {o.status === 'ontrip' && (
+                      <button
+                        onClick={() => completeRide(o.id)}
+                        className="px-3 py-1.5 rounded-full border border-gray-300 bg-white hover:bg-gray-50"
+                      >
+                        Complete Ride
                       </button>
                     )}
                   </div>
