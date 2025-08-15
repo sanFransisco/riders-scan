@@ -18,20 +18,18 @@ export async function POST(req: NextRequest) {
 
     const client = await pool.connect()
     try {
-      // find candidate drivers inside a 3km radius and seen in last 30s and not active in rides
+      // Find candidate drivers seen in last 30s and within rough lat/lng box (approx 3km)
       const candidates = await client.query(
-        `WITH rect AS (
-           SELECT ST_MakeEnvelope($1,$2,$3,$4, 4326)::geography AS env
-         )
-         SELECT dp.driver_id
-         FROM driver_presence dp, rect
+        `SELECT dp.driver_id
+         FROM driver_presence dp
          WHERE NOW() - dp.last_seen <= INTERVAL '30 seconds'
-           AND ST_DWithin(dp.geom, ST_SetSRID(ST_MakePoint($5,$6),4326)::geography, 3000)
+           AND dp.lat BETWEEN $1 AND $2
+           AND dp.lng BETWEEN $3 AND $4
            AND NOT EXISTS (
              SELECT 1 FROM rides r WHERE r.driver_id = dp.driver_id AND r.ended_at IS NULL
            )
          LIMIT 20;`,
-        [pickup.lng-0.02, pickup.lat-0.02, pickup.lng+0.02, pickup.lat+0.02, pickup.lng, pickup.lat]
+        [pickup.lat - 0.03, pickup.lat + 0.03, pickup.lng - 0.03, pickup.lng + 0.03]
       )
 
       if (candidates.rows.length === 0) {
@@ -50,10 +48,10 @@ export async function POST(req: NextRequest) {
         if (excludeSelf && row.driver_id === excludeSelf) continue
         try {
           const insert = await client.query(
-            `INSERT INTO rides (rider_id, driver_id, pickup, status, created_at, expires_at)
-             VALUES ($1, $2, ST_SetSRID(ST_MakePoint($3,$4),4326)::geography, 'pending', NOW(), NOW() + INTERVAL '2 minutes')
+            `INSERT INTO rides (rider_id, driver_id, pickup_lat, pickup_lng, status, created_at, expires_at)
+             VALUES ($1, $2, $3, $4, 'pending', NOW(), NOW() + INTERVAL '2 minutes')
              RETURNING id`,
-            [riderId, row.driver_id, pickup.lng, pickup.lat]
+            [riderId, row.driver_id, pickup.lat, pickup.lng]
           )
           rideId = insert.rows[0].id
           break

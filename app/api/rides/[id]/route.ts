@@ -18,10 +18,7 @@ export async function GET(
       const res = await client.query(
         `SELECT id, rider_id, driver_id, status, created_at, started_at, ended_at,
                 driver_accepted_at, rider_consented_at, expires_at,
-                ST_X(pickup::geometry) AS pickup_lng,
-                ST_Y(pickup::geometry) AS pickup_lat,
-                ST_X(dropoff::geometry) AS dropoff_lng,
-                ST_Y(dropoff::geometry) AS dropoff_lat
+                pickup_lng, pickup_lat, dropoff_lng, dropoff_lat
          FROM rides WHERE id = $1`,
         [params.id]
       )

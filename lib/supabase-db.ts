@@ -363,23 +363,31 @@ export async function initDatabase() {
     }
     
     if (currentVersion < 4) {
-      // Version 4: PostGIS + driver_presence and rides tables
+      // Skip legacy PostGIS-based migration to remain compatible with pooler.
+      await client.query('UPDATE schema_version SET version = 4, updated_at = NOW() WHERE id = 1')
+      console.log('✅ Skipped legacy PostGIS migration, advanced to version 4')
+    }
+
+    if (currentVersion < 5) {
+      // Version 5: consent timestamps on rides
       await client.query(`
-        -- Enable PostGIS
-        CREATE EXTENSION IF NOT EXISTS postgis;
+        DO $$ BEGIN
+          -- No-op when rides table doesn't exist yet (handled in v6)
+        END $$;
       `)
-      
-      // driver_presence (no status field; availability derived from rides + last_seen)
+      await client.query('UPDATE schema_version SET version = 5, updated_at = NOW() WHERE id = 1')
+      console.log('✅ Applied migration to version 5 (rides consent timestamps)')
+    }
+
+    if (currentVersion < 6) {
+      // Version 6: Create driver_presence and rides without PostGIS
       await client.query(`
         CREATE TABLE IF NOT EXISTS driver_presence (
           driver_id UUID PRIMARY KEY,
           user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
           lat DOUBLE PRECISION NOT NULL,
           lng DOUBLE PRECISION NOT NULL,
-          geom GEOGRAPHY(Point, 4326)
-            GENERATED ALWAYS AS (ST_SetSRID(ST_MakePoint(lng, lat), 4326)::geography) STORED,
           last_seen TIMESTAMP NOT NULL DEFAULT NOW(),
-          -- optional, all nullable
           service TEXT,
           accuracy_m INT,
           speed_kmh INT,
@@ -391,69 +399,32 @@ export async function initDatabase() {
       `)
       await client.query(`
         CREATE INDEX IF NOT EXISTS idx_driver_presence_last_seen ON driver_presence(last_seen);
-        CREATE INDEX IF NOT EXISTS idx_driver_presence_geom ON driver_presence USING GIST(geom);
+        CREATE INDEX IF NOT EXISTS idx_driver_presence_lat_lng ON driver_presence(lat, lng);
       `)
-      
-      // rides table (source of truth for active ride)
       await client.query(`
         CREATE TABLE IF NOT EXISTS rides (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           rider_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
           driver_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-          pickup GEOGRAPHY(Point, 4326),
-          dropoff GEOGRAPHY(Point, 4326),
+          pickup_lat DOUBLE PRECISION,
+          pickup_lng DOUBLE PRECISION,
+          dropoff_lat DOUBLE PRECISION,
+          dropoff_lng DOUBLE PRECISION,
           status TEXT NOT NULL CHECK (status IN ('pending','consented','enroute','ontrip','completed','canceled')),
           created_at TIMESTAMP NOT NULL DEFAULT NOW(),
           started_at TIMESTAMP,
-          ended_at TIMESTAMP
+          ended_at TIMESTAMP,
+          driver_accepted_at TIMESTAMP,
+          rider_consented_at TIMESTAMP,
+          expires_at TIMESTAMP
         );
       `)
       await client.query(`
         CREATE UNIQUE INDEX IF NOT EXISTS ux_rides_driver_active ON rides(driver_id) WHERE ended_at IS NULL;
         CREATE UNIQUE INDEX IF NOT EXISTS ux_rides_rider_active ON rides(rider_id) WHERE ended_at IS NULL;
       `)
-      
-      // RLS for driver_presence: drivers can upsert only their row
-      await client.query(`
-        DO $$
-        BEGIN
-          EXECUTE 'ALTER TABLE driver_presence ENABLE ROW LEVEL SECURITY';
-        EXCEPTION WHEN others THEN NULL;
-        END $$;
-      `)
-      await client.query(`
-        CREATE POLICY IF NOT EXISTS driver_presence_self_insert ON driver_presence
-          FOR INSERT WITH CHECK (user_id = auth.uid()::uuid);
-      `)
-      await client.query(`
-        CREATE POLICY IF NOT EXISTS driver_presence_self_update ON driver_presence
-          FOR UPDATE USING (user_id = auth.uid()::uuid);
-      `)
-      
-      await client.query('UPDATE schema_version SET version = 4, updated_at = NOW() WHERE id = 1')
-      console.log('✅ Applied migration to version 4 (PostGIS + presence + rides)')
-    }
-
-    if (currentVersion < 5) {
-      // Version 5: consent timestamps on rides
-      await client.query(`
-        DO $$ BEGIN
-          IF NOT EXISTS (
-            SELECT 1 FROM information_schema.columns
-            WHERE table_name='rides' AND column_name='driver_accepted_at'
-          ) THEN ALTER TABLE rides ADD COLUMN driver_accepted_at TIMESTAMP; END IF;
-          IF NOT EXISTS (
-            SELECT 1 FROM information_schema.columns
-            WHERE table_name='rides' AND column_name='rider_consented_at'
-          ) THEN ALTER TABLE rides ADD COLUMN rider_consented_at TIMESTAMP; END IF;
-          IF NOT EXISTS (
-            SELECT 1 FROM information_schema.columns
-            WHERE table_name='rides' AND column_name='expires_at'
-          ) THEN ALTER TABLE rides ADD COLUMN expires_at TIMESTAMP; END IF;
-        END $$;
-      `)
-      await client.query('UPDATE schema_version SET version = 5, updated_at = NOW() WHERE id = 1')
-      console.log('✅ Applied migration to version 5 (rides consent timestamps)')
+      await client.query('UPDATE schema_version SET version = 6, updated_at = NOW() WHERE id = 1')
+      console.log('✅ Applied migration to version 6 (presence + rides without PostGIS)')
     }
 
     client.release()

@@ -20,8 +20,7 @@ export async function GET(req: NextRequest) {
       const res = await client.query(
         `SELECT id, rider_id, driver_id, status, created_at, expires_at,
                 driver_accepted_at, rider_consented_at,
-                ST_X(pickup::geometry) AS pickup_lng,
-                ST_Y(pickup::geometry) AS pickup_lat
+                pickup_lat, pickup_lng
          FROM rides
          WHERE driver_id = $1
            AND status IN ('pending','consented','enroute')
