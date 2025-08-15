@@ -14,7 +14,8 @@ export default async function HomePage() {
   const roles: string[] = Array.isArray((session?.user as any)?.roles)
     ? ((session?.user as any)?.roles as string[])
     : []
-  if (roles.length === 0) {
+  const hasPrimaryRole = roles.includes('rider') || roles.includes('driver')
+  if (!hasPrimaryRole) {
     redirect('/auth/onboarding')
   }
 
