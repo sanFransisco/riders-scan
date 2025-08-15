@@ -180,6 +180,23 @@ export async function initDatabase() {
       `CREATE INDEX IF NOT EXISTS idx_reviews_driver_id ON reviews(driver_id)`,
       `CREATE INDEX IF NOT EXISTS idx_reviews_user_id ON reviews(user_id)`,
       
+      // 7.5 Ensure users.role is TEXT[] (migrate from TEXT if needed)
+      `DO $$ BEGIN
+         IF EXISTS (
+           SELECT 1 FROM information_schema.columns 
+           WHERE table_name = 'users' AND column_name = 'role' AND data_type <> 'ARRAY'
+         ) THEN
+           ALTER TABLE users ALTER COLUMN role TYPE TEXT[] USING (
+             CASE 
+               WHEN role IS NULL OR role = '' THEN ARRAY['user']::TEXT[]
+               WHEN role LIKE '{%' THEN string_to_array(replace(replace(role,'{',''),'}',''), ',')::TEXT[]
+               ELSE string_to_array(role, ',')::TEXT[]
+             END
+           );
+           ALTER TABLE users ALTER COLUMN role SET DEFAULT ARRAY['user'];
+         END IF;
+       END $$;`,
+      
       // 8. Insert yourself as admin (replace with your email)
       // Preserve any existing roles and ensure 'user' and 'admin' are present without overwriting others
       `INSERT INTO users (email, name, role) 
@@ -188,7 +205,7 @@ export async function initDatabase() {
        DO UPDATE SET 
          role = (
            SELECT ARRAY(
-             SELECT DISTINCT UNNEST(COALESCE(users.role, ARRAY[]::TEXT[]) || ARRAY['user','admin'])
+             SELECT DISTINCT UNNEST(COALESCE(users.role, ARRAY['user']::TEXT[]) || ARRAY['user','admin'])
            )
          ),
          updated_at = NOW()`,
