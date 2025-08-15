@@ -147,6 +147,7 @@ export default function RiderPage() {
               <button
                 onClick={async () => {
                   try {
+                    if (!consentDriver?.license_plate) return
                     // Fetch by license plate -> first get driver id
                     const res = await fetch(`/api/drivers?q=${encodeURIComponent(consentDriver.license_plate)}`)
                     if (res.ok) {
