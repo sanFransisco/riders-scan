@@ -180,16 +180,29 @@ export async function initDatabase() {
       `CREATE INDEX IF NOT EXISTS idx_reviews_driver_id ON reviews(driver_id)`,
       `CREATE INDEX IF NOT EXISTS idx_reviews_user_id ON reviews(user_id)`,
       
-      // 7.5 Ensure users.role is TEXT[] (migrate from TEXT if needed)
-      `DO $$ BEGIN
+      // 7.5 Ensure users.role is TEXT[] (migrate from TEXT if needed). Drop policies first to avoid dependency errors.
+      `DO $$
+       DECLARE pol RECORD;
+       BEGIN
          IF EXISTS (
            SELECT 1 FROM information_schema.columns 
            WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'role' AND data_type <> 'ARRAY'
          ) THEN
+           -- Drop any existing policies on users to allow type change
+           FOR pol IN (
+             SELECT policyname FROM pg_policies WHERE schemaname = 'public' AND tablename = 'users'
+           ) LOOP
+             EXECUTE format('DROP POLICY IF EXISTS %I ON public.users', pol.policyname);
+           END LOOP;
+           -- Temporarily disable RLS to avoid conflicts during migration
+           BEGIN
+             EXECUTE 'ALTER TABLE public.users DISABLE ROW LEVEL SECURITY';
+           EXCEPTION WHEN others THEN NULL; END;
+
            -- Drop incompatible default before type change
-           ALTER TABLE users ALTER COLUMN role DROP DEFAULT;
+           ALTER TABLE public.users ALTER COLUMN role DROP DEFAULT;
            -- Convert text to text[] using safe parsing
-           ALTER TABLE users ALTER COLUMN role TYPE TEXT[] USING (
+           ALTER TABLE public.users ALTER COLUMN role TYPE TEXT[] USING (
              CASE 
                WHEN role IS NULL OR role = '' THEN ARRAY[]::TEXT[]
                WHEN role LIKE '{%' THEN string_to_array(replace(replace(role,'{',''),'}',''), ',')::TEXT[]
@@ -197,7 +210,7 @@ export async function initDatabase() {
              END
            );
            -- Set new default for the array column
-           ALTER TABLE users ALTER COLUMN role SET DEFAULT ARRAY['user'];
+           ALTER TABLE public.users ALTER COLUMN role SET DEFAULT ARRAY['user'];
          END IF;
        END $$;`,
       
@@ -268,11 +281,11 @@ export async function initDatabase() {
       `DROP POLICY IF EXISTS "Admins can manage all reviews" ON reviews`,
       `DROP POLICY IF EXISTS "Only admins can manage role scopes" ON role_scopes`,
       
-      // 14. Create RLS policies
-      `CREATE POLICY "Users can read own data" ON users
+      // 14. Create RLS policies (re-create after potential migration)
+      `CREATE POLICY IF NOT EXISTS "Users can read own data" ON users
            FOR SELECT USING (auth.uid()::text = id::text)`,
       
-      `CREATE POLICY "Users can update own data" ON users
+      `CREATE POLICY IF NOT EXISTS "Users can update own data" ON users
            FOR UPDATE USING (auth.uid()::text = id::text)`,
       
       `CREATE POLICY "Anyone can read drivers" ON drivers
