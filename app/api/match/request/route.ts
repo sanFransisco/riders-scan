@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
       const presenceWindow = await client.query(
         `SELECT COUNT(*)::int AS c FROM driver_presence WHERE NOW() - last_seen <= INTERVAL '2 minutes'`
       )
-      const candidates = await client.query(
+      let candidates = await client.query(
         `SELECT dp.driver_id
          FROM driver_presence dp
          WHERE NOW() - dp.last_seen <= INTERVAL '2 minutes'
@@ -42,7 +42,24 @@ export async function POST(req: NextRequest) {
       console.log('Presence last30s:', presenceWindow.rows[0]?.c, 'candidates:', candidates.rows.length)
 
       if (candidates.rows.length === 0) {
-        return NextResponse.json({ ok: false, message: 'No drivers nearby', debug: { presenceLast30s: presenceWindow.rows[0]?.c || 0 } }, { status: 200 })
+        // Fallback: ignore rectangle if presence exists; helps when devices report coarse IP-based GPS
+        if ((presenceWindow.rows[0]?.c || 0) > 0) {
+          const anyNearby = await client.query(
+            `SELECT dp.driver_id
+             FROM driver_presence dp
+             WHERE NOW() - dp.last_seen <= INTERVAL '2 minutes'
+               AND NOT EXISTS (
+                 SELECT 1 FROM rides r WHERE r.driver_id = dp.driver_id AND r.ended_at IS NULL
+               )
+             ORDER BY dp.last_seen DESC
+             LIMIT 10;`
+          )
+          console.log('Fallback candidates:', anyNearby.rows.length)
+          candidates = anyNearby
+        }
+        if (candidates.rows.length === 0) {
+          return NextResponse.json({ ok: false, message: 'No drivers nearby', debug: { presenceLast2m: presenceWindow.rows[0]?.c || 0 } }, { status: 200 })
+        }
       }
 
       const riderId = session.user.id
