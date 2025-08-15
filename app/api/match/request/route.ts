@@ -39,8 +39,15 @@ export async function POST(req: NextRequest) {
       }
 
       const riderId = session.user.id
+      // Prevent self-matching if user is also online as driver
+      const blockedDriver = await client.query(`
+        SELECT 1 FROM driver_presence WHERE user_id = $1 AND NOW() - last_seen <= INTERVAL '30 seconds'`,
+        [riderId]
+      )
+      const excludeSelf = blockedDriver.rows.length > 0 ? riderId : null
       let rideId: string | null = null
       for (const row of candidates.rows) {
+        if (excludeSelf && row.driver_id === excludeSelf) continue
         try {
           const insert = await client.query(
             `INSERT INTO rides (rider_id, driver_id, pickup, status, created_at, expires_at)

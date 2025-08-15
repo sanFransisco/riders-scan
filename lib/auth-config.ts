@@ -23,17 +23,22 @@ export const serverAuthOptions = {
           )
 
           if (existingUser.rows.length === 0) {
-            // Create new user
+            // Create new user with default rider role
             await client.query(
-              'INSERT INTO users (email, name, role) VALUES ($1, $2, ARRAY[$3]::TEXT[])',
-              [user.email, user.name, 'user']
+              `INSERT INTO users (email, name, role) VALUES ($1, $2, ARRAY['rider']::TEXT[])`,
+              [user.email, user.name]
             )
           } else {
-            // Update existing user - ensure role is properly set if it's null/empty
+            // Update existing user - ensure 'rider' role present
             await client.query(
               `UPDATE users 
-               SET name = $1, 
-                   updated_at = NOW() 
+               SET name = $1,
+                   role = CASE 
+                     WHEN role IS NULL OR array_length(role,1) = 0 THEN ARRAY['rider']::TEXT[]
+                     WHEN NOT ('rider' = ANY(role)) THEN array_append(role, 'rider')
+                     ELSE role
+                   END,
+                   updated_at = NOW()
                WHERE email = $2`,
               [user.name, user.email]
             )
@@ -60,15 +65,16 @@ export const serverAuthOptions = {
           if (userResult.rows.length > 0) {
             const userData = userResult.rows[0]
             session.user.id = userData.id
-            
-            // Handle PostgreSQL array format for role check
-            const userRole = userData.role
-            
-            // Check if user has admin role
-            const isAdmin = Array.isArray(userRole) ? userRole.includes('admin') : 
-                           (typeof userRole === 'string' && userRole.includes('admin'))
-            
+            const roles = Array.isArray(userData.role)
+              ? userData.role
+              : typeof userData.role === 'string' && userData.role.startsWith('{')
+              ? userData.role.replace(/[{}]/g, '').split(',').filter(Boolean)
+              : []
+            ;
+            // Convenience flags
+            const isAdmin = roles.includes('admin')
             session.user.role = isAdmin ? 'admin' : 'user'
+            ;(session.user as any).roles = roles
           }
         } catch (error) {
           console.error('Error getting user session data:', error)
