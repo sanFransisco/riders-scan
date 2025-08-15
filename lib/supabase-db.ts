@@ -184,15 +184,19 @@ export async function initDatabase() {
       `DO $$ BEGIN
          IF EXISTS (
            SELECT 1 FROM information_schema.columns 
-           WHERE table_name = 'users' AND column_name = 'role' AND data_type <> 'ARRAY'
+           WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'role' AND data_type <> 'ARRAY'
          ) THEN
+           -- Drop incompatible default before type change
+           ALTER TABLE users ALTER COLUMN role DROP DEFAULT;
+           -- Convert text to text[] using safe parsing
            ALTER TABLE users ALTER COLUMN role TYPE TEXT[] USING (
              CASE 
-               WHEN role IS NULL OR role = '' THEN ARRAY['user']::TEXT[]
+               WHEN role IS NULL OR role = '' THEN ARRAY[]::TEXT[]
                WHEN role LIKE '{%' THEN string_to_array(replace(replace(role,'{',''),'}',''), ',')::TEXT[]
                ELSE string_to_array(role, ',')::TEXT[]
              END
            );
+           -- Set new default for the array column
            ALTER TABLE users ALTER COLUMN role SET DEFAULT ARRAY['user'];
          END IF;
        END $$;`,
