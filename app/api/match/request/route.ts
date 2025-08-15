@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
       const presenceWindow = await client.query(
         `SELECT COUNT(*)::int AS c FROM driver_presence WHERE NOW() - last_seen <= INTERVAL '2 minutes'`
       )
+      const delta = 0.2; // ~20km latitude window; longitude approx similar for MVP
       let candidates = await client.query(
         `SELECT dp.driver_id
          FROM driver_presence dp
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
              SELECT 1 FROM rides r WHERE r.driver_id = dp.driver_id AND r.ended_at IS NULL
            )
          LIMIT 20;`,
-        [pickup.lat - 0.03, pickup.lat + 0.03, pickup.lng - 0.03, pickup.lng + 0.03]
+        [pickup.lat - delta, pickup.lat + delta, pickup.lng - delta, pickup.lng + delta]
       )
       console.log('Presence last30s:', presenceWindow.rows[0]?.c, 'candidates:', candidates.rows.length)
 
