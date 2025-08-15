@@ -16,10 +16,13 @@ export async function GET(
     const client = await pool.connect()
     try {
       const res = await client.query(
-        `SELECT id, rider_id, driver_id, status, created_at, started_at, ended_at,
-                driver_accepted_at, rider_consented_at, expires_at,
-                pickup_lng, pickup_lat, dropoff_lng, dropoff_lat
-         FROM rides WHERE id = $1`,
+        `SELECT r.id, r.rider_id, r.driver_id, r.status, r.created_at, r.started_at, r.ended_at,
+                r.driver_accepted_at, r.rider_consented_at, r.expires_at,
+                r.pickup_lng, r.pickup_lat, r.dropoff_lng, r.dropoff_lat,
+                d.license_plate, d.full_name
+         FROM rides r
+         LEFT JOIN drivers d ON d.user_id = r.driver_id
+         WHERE r.id = $1`,
         [params.id]
       )
       if (res.rows.length === 0) {

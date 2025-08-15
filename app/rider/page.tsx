@@ -9,6 +9,7 @@ export default function RiderPage() {
   const router = useRouter()
   const [matchId, setMatchId] = useState<string | null>(null)
   const [rideStatus, setRideStatus] = useState<string>('idle')
+  const [consentDriver, setConsentDriver] = useState<{ license_plate?: string; full_name?: string } | null>(null)
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null)
   const [autoAcceptIn, setAutoAcceptIn] = useState<number | null>(null)
 
@@ -51,6 +52,7 @@ export default function RiderPage() {
       const { ride } = await res.json()
       if (ride?.driver_accepted_at && !ride?.rider_consented_at) {
         setRideStatus('consent')
+        setConsentDriver({ license_plate: ride.license_plate, full_name: ride.full_name })
         // TODO: show driver analytics inline here (fetch and display)
         if (autoAcceptIn == null) {
           let seconds = 10
@@ -130,6 +132,12 @@ export default function RiderPage() {
       {rideStatus === 'consent' && matchId && (
         <div className="bg-white border rounded-lg p-4">
           <p className="mb-3">Driver assigned. Start ride?</p>
+          {consentDriver && (
+            <div className="mb-3 text-sm text-gray-700">
+              <div>License: {consentDriver.license_plate || '—'}</div>
+              {consentDriver.full_name && <div>Name: {consentDriver.full_name}</div>}
+            </div>
+          )}
           <div className="flex gap-2">
             <button
               onClick={() => approveRide(matchId)}
