@@ -16,7 +16,9 @@ export default function OnboardingPage() {
     })
     setSaving(false)
     if (res.ok) {
-      router.push(role === 'driver' ? '/driver' : '/')
+      // Force session refresh and hard redirect so server-side gating sees updated roles
+      try { await fetch('/api/auth/session?update=1', { cache: 'no-store' }) } catch {}
+      window.location.href = role === 'driver' ? '/driver' : '/'
     } else {
       alert('Failed to save role')
     }
