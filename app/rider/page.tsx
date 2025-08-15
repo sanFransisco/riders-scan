@@ -14,26 +14,50 @@ export default function RiderPage() {
 
   const requestRide = async () => {
     if (!navigator.geolocation) return alert('Geolocation not supported')
-    navigator.geolocation.getCurrentPosition(async (pos) => {
-      const body = {
-        pickup: { lat: pos.coords.latitude, lng: pos.coords.longitude },
-        dropoff: null,
-        service: null,
-      }
-      const res = await fetch('/api/match/request', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-      const data = await res.json()
-      if (data.ok && data.matchId) {
-        setMatchId(data.matchId)
-        setRideStatus('matching')
-        startPolling(data.matchId)
-      } else {
-        alert(data.message || 'No drivers nearby')
-      }
-    })
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const body = {
+          pickup: { lat: pos.coords.latitude, lng: pos.coords.longitude },
+          dropoff: null,
+          service: null,
+        }
+        const res = await fetch('/api/match/request', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        })
+        const data = await res.json()
+        if (data.ok && data.matchId) {
+          setMatchId(data.matchId)
+          setRideStatus('matching')
+          startPolling(data.matchId)
+        } else {
+          alert(data.message || 'No drivers nearby')
+        }
+      },
+      async (err) => {
+        console.error('Geolocation error', err)
+        // Fallback: attempt matching without coordinates (server uses presence within last 2 minutes)
+        const res = await fetch('/api/match/request', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pickup: null, dropoff: null, service: null }),
+        })
+        try {
+          const data = await res.json()
+          if (data.ok && data.matchId) {
+            setMatchId(data.matchId)
+            setRideStatus('matching')
+            startPolling(data.matchId)
+          } else {
+            alert(data.message || 'No drivers nearby (no GPS)')
+          }
+        } catch {
+          alert('Failed to request ride')
+        }
+      },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+    )
   }
 
   const startPolling = (id: string) => {

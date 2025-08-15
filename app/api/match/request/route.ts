@@ -18,6 +18,9 @@ export async function POST(req: NextRequest) {
 
     const client = await pool.connect()
     try {
+      // Debug: count presence rows visible now
+      const dbg = await client.query(`SELECT COUNT(*)::int AS c FROM driver_presence WHERE NOW() - last_seen <= INTERVAL '2 minutes'`)
+      console.log('Presence in last 2m:', dbg.rows[0]?.c)
       // TEMP: broaden selection — any driver seen in last 2 minutes and not active
       const candidates = await client.query(
         `SELECT dp.driver_id
