@@ -165,7 +165,17 @@ export default function DriverClient() {
   }
 
   const completeRide = async (id: string) => {
-    await fetch(`/api/rides/${id}/complete`, { method: 'POST' })
+    let amt: number | null = null
+    const input = window.prompt('Enter fare amount (ILS):')
+    if (input != null && input.trim() !== '') {
+      const n = Number(input)
+      if (!Number.isNaN(n) && n >= 0) amt = Number(n.toFixed(2))
+    }
+    await fetch(`/api/rides/${id}/complete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: amt, currency: 'ILS' })
+    })
   }
 
   return (

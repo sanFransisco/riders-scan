@@ -19,6 +19,7 @@ export async function GET(
         `SELECT r.id, r.rider_id, r.driver_id, r.status, r.created_at, r.started_at, r.ended_at,
                 r.driver_accepted_at, r.rider_consented_at, r.expires_at,
                 r.pickup_lng, r.pickup_lat, r.dropoff_lng, r.dropoff_lat,
+                r.amount, r.currency,
                 d.id AS driver_profile_id, d.license_plate, d.full_name
          FROM rides r
          LEFT JOIN drivers d ON d.user_id = r.driver_id OR d.license_plate::text = r.driver_id::text
