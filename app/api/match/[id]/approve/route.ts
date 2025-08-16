@@ -25,7 +25,7 @@ export async function POST(
       }
 
       await client.query(
-        `UPDATE rides SET rider_consented_at = NOW(), status = CASE WHEN status IN ('pending','enroute') THEN 'enroute' ELSE status END WHERE id = $1`,
+        `UPDATE rides SET rider_consented_at = NOW(), status = CASE WHEN status IN ('pending','consented') THEN 'enroute' ELSE status END WHERE id = $1`,
         [params.id]
       )
       return NextResponse.json({ ok: true })

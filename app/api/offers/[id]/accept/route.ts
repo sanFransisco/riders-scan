@@ -28,7 +28,7 @@ export async function POST(
       }
 
       await client.query(
-        `UPDATE rides SET driver_accepted_at = NOW(), status = 'enroute' WHERE id = $1`,
+        `UPDATE rides SET driver_accepted_at = NOW(), status = 'consented' WHERE id = $1`,
         [params.id]
       )
       return NextResponse.json({ ok: true })
