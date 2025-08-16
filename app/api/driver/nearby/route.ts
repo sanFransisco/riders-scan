@@ -83,8 +83,29 @@ export async function GET(req: NextRequest) {
          ORDER BY last_seen DESC
          LIMIT 5`
       )
-      console.log('Nearby request', { lat, lng, halfWidth, halfHeight, bounds: { minLat, maxLat, minLng, maxLng }, recentTotal, count, wideCount, samples: samples.rows })
-      return NextResponse.json({ ok: true, count, recentTotal, wideCount, bounds: { minLat, maxLat, minLng, maxLng } })
+
+      // Compute nearest distance (km) from samples to rider
+      const toRad = (d: number) => (d * Math.PI) / 180
+      const haversineKm = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+        const R = 6371
+        const dLat = toRad(lat2 - lat1)
+        const dLng = toRad(lng2 - lng1)
+        const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+        return R * c
+      }
+      let nearestDistanceKm: number | null = null
+      let nearestCoord: { lat: number; lng: number } | null = null
+      for (const row of samples.rows) {
+        const d = haversineKm(lat, lng, Number(row.lat), Number(row.lng))
+        if (nearestDistanceKm == null || d < nearestDistanceKm) {
+          nearestDistanceKm = d
+          nearestCoord = { lat: Number(row.lat), lng: Number(row.lng) }
+        }
+      }
+
+      console.log('Nearby request', { lat, lng, halfWidth, halfHeight, bounds: { minLat, maxLat, minLng, maxLng }, recentTotal, count, wideCount, nearestDistanceKm, nearestCoord, samples: samples.rows })
+      return NextResponse.json({ ok: true, count, recentTotal, wideCount, nearestDistanceKm, bounds: { minLat, maxLat, minLng, maxLng } })
     } finally {
       client.release()
     }
