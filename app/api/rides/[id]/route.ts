@@ -21,7 +21,7 @@ export async function GET(
                 r.pickup_lng, r.pickup_lat, r.dropoff_lng, r.dropoff_lat,
                 d.id AS driver_profile_id, d.license_plate, d.full_name
          FROM rides r
-         LEFT JOIN drivers d ON d.user_id = r.driver_id
+         LEFT JOIN drivers d ON d.user_id = r.driver_id OR d.license_plate::text = r.driver_id::text
          WHERE r.id = $1`,
         [params.id]
       )

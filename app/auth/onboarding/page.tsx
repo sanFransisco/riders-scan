@@ -1,11 +1,12 @@
 "use client"
 
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 
 export default function OnboardingPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { data: session, status } = useSession()
   const [saving, setSaving] = useState(false)
   const [license, setLicense] = useState('')
@@ -14,9 +15,10 @@ export default function OnboardingPage() {
   useEffect(() => {
     if (status === 'loading') return
     const roles: string[] = (session?.user as any)?.roles || []
+    const forceLicense = searchParams?.get('needLicense') === '1'
     if (!session) {
       router.replace('/auth/signin')
-    } else if (roles.includes('driver')) {
+    } else if (roles.includes('driver') && !forceLicense) {
       router.replace('/driver')
     } else if (roles.includes('rider')) {
       router.replace('/')

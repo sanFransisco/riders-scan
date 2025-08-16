@@ -31,6 +31,12 @@ export async function POST(req: NextRequest) {
           [full_name ?? null, license_plate, session.user.id]
         )
       }
+
+      // Ensure driver role present on user
+      await client.query(
+        `UPDATE users SET role = CASE WHEN array_position(role, 'driver') IS NULL THEN array_append(role, 'driver') ELSE role END WHERE id = $1`,
+        [session.user.id]
+      )
       return NextResponse.json({ ok: true })
     } finally {
       client.release()
