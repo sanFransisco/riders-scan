@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
           [session.user.id, full_name ?? null, existing.rows[0].id]
         )
       } else {
+        // Create driver and link to this user
         await client.query(
           `INSERT INTO drivers (full_name, license_plate, user_id) VALUES ($1, $2, $3)`,
           [full_name ?? null, license_plate, session.user.id]

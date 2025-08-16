@@ -143,7 +143,7 @@ export async function initDatabase() {
       // 3. Create drivers table (no dependencies)
       `CREATE TABLE IF NOT EXISTS drivers (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID UNIQUE,
+        user_id UUID UNIQUE REFERENCES users(id) ON DELETE SET NULL,
         full_name TEXT,
         license_plate TEXT UNIQUE NOT NULL,
         created_at TIMESTAMP DEFAULT NOW(),

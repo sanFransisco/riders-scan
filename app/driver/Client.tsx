@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 interface Offer {
   id: string
@@ -14,6 +15,7 @@ interface Offer {
 }
 
 export default function DriverClient() {
+  const router = useRouter()
   const [online, setOnline] = useState(false)
   const [offers, setOffers] = useState<Offer[]>([])
   const [hasProfile, setHasProfile] = useState<boolean | null>(null)
@@ -83,8 +85,25 @@ export default function DriverClient() {
   }
 
   useEffect(() => {
-    // Optional: could load profile here if needed for future UI
-    setHasProfile(true)
+    // Check driver profile; if missing, redirect to onboarding to capture license
+    ;(async () => {
+      try {
+        const res = await fetch('/api/driver/profile', { cache: 'no-store' })
+        if (res.ok) {
+          const data = await res.json()
+          if (!data.driver) {
+            router.push('/auth/onboarding?needLicense=1')
+            setHasProfile(false)
+            return
+          }
+          setHasProfile(true)
+        } else {
+          setHasProfile(true)
+        }
+      } catch {
+        setHasProfile(true)
+      }
+    })()
     if (online) {
       startHeartbeat()
       startOffersPolling()
