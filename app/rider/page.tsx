@@ -14,6 +14,7 @@ export default function RiderPage() {
   const [consentDriver, setConsentDriver] = useState<{ license_plate?: string; full_name?: string; driver_profile_id?: string } | null>(null)
   const [overlayDriver, setOverlayDriver] = useState<DriverAnalytics | null>(null)
   const [overlayOpen, setOverlayOpen] = useState(false)
+  const overlayAutoOpened = useRef(false)
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null)
   const [autoAcceptIn, setAutoAcceptIn] = useState<number | null>(null)
 
@@ -122,6 +123,40 @@ export default function RiderPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, status])
 
+  // Auto-open analytics overlay on consent (once)
+  useEffect(() => {
+    const openOverlay = async () => {
+      if (overlayAutoOpened.current) return
+      if (rideStatus !== 'consent') return
+      overlayAutoOpened.current = true
+      try {
+        if (consentDriver?.driver_profile_id) {
+          const res = await fetch(`/api/drivers/${consentDriver.driver_profile_id}`)
+          if (res.ok) {
+            const data = await res.json()
+            if (data?.analytics) {
+              setOverlayDriver(data.analytics as DriverAnalytics)
+              setOverlayOpen(true)
+              return
+            }
+          }
+        }
+        if (consentDriver?.license_plate) {
+          const res = await fetch(`/api/drivers?q=${encodeURIComponent(consentDriver.license_plate)}`)
+          if (res.ok) {
+            const list = await res.json()
+            if (Array.isArray(list) && list.length > 0) {
+              setOverlayDriver(list[0] as DriverAnalytics)
+              setOverlayOpen(true)
+              return
+            }
+          }
+        }
+      } catch {}
+    }
+    openOverlay()
+  }, [rideStatus, consentDriver])
+
   return (
     <div className="max-w-2xl mx-auto p-6 space-y-6">
       <h1 className="text-2xl font-bold">Rider Console (MVP)</h1>
@@ -147,17 +182,30 @@ export default function RiderPage() {
             </div>
           )}
           <div className="flex gap-2">
-            {consentDriver?.driver_profile_id && (
+            {(consentDriver?.driver_profile_id || consentDriver?.license_plate) && (
               <button
                 onClick={async () => {
                   try {
                     // Fetch analytics directly by driver id for accuracy
-                    const res = await fetch(`/api/drivers/${consentDriver.driver_profile_id}`)
-                    if (res.ok) {
-                      const data = await res.json()
-                      if (data?.analytics) {
-                        setOverlayDriver(data.analytics as DriverAnalytics)
-                        setOverlayOpen(true)
+                    if (consentDriver?.driver_profile_id) {
+                      const res = await fetch(`/api/drivers/${consentDriver.driver_profile_id}`)
+                      if (res.ok) {
+                        const data = await res.json()
+                        if (data?.analytics) {
+                          setOverlayDriver(data.analytics as DriverAnalytics)
+                          setOverlayOpen(true)
+                          return
+                        }
+                      }
+                    }
+                    if (consentDriver?.license_plate) {
+                      const res2 = await fetch(`/api/drivers?q=${encodeURIComponent(consentDriver.license_plate)}`)
+                      if (res2.ok) {
+                        const list = await res2.json()
+                        if (Array.isArray(list) && list.length > 0) {
+                          setOverlayDriver(list[0] as DriverAnalytics)
+                          setOverlayOpen(true)
+                        }
                       }
                     }
                   } catch {}
