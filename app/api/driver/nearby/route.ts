@@ -68,6 +68,7 @@ export async function GET(req: NextRequest) {
         )
         count = wideRes.rows[0]?.cnt ?? 0
       }
+      console.log('Nearby request', { lat, lng, halfWidth, halfHeight, bounds: { minLat, maxLat, minLng, maxLng }, recentTotal, count })
       return NextResponse.json({ ok: true, count, recentTotal, bounds: { minLat, maxLat, minLng, maxLng } })
     } finally {
       client.release()
