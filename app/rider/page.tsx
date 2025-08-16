@@ -15,6 +15,9 @@ export default function RiderPage() {
   const [overlayDriver, setOverlayDriver] = useState<DriverAnalytics | null>(null)
   const [overlayOpen, setOverlayOpen] = useState(false)
   const overlayAutoOpened = useRef(false)
+  const [showHistory, setShowHistory] = useState(false)
+  const [history, setHistory] = useState<any[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null)
   const [autoAcceptIn, setAutoAcceptIn] = useState<number | null>(null)
 
@@ -150,6 +153,27 @@ export default function RiderPage() {
     <div className="max-w-2xl mx-auto p-6 space-y-6">
       <h1 className="text-2xl font-bold">Rider Console (MVP)</h1>
 
+      <div>
+        <button
+          onClick={async () => {
+            setShowHistory(true)
+            setHistoryLoading(true)
+            try {
+              const res = await fetch('/api/rides/mine', { cache: 'no-store' })
+              if (res.ok) {
+                const data = await res.json()
+                setHistory(data.rides || [])
+              }
+            } finally {
+              setHistoryLoading(false)
+            }
+          }}
+          className="px-4 py-2 rounded-full border border-gray-300 bg-white text-black hover:bg-gray-50"
+        >
+          My Rides
+        </button>
+      </div>
+
       {rideStatus === 'idle' && (
         <button
           onClick={requestRide}
@@ -225,6 +249,46 @@ export default function RiderPage() {
 
       {overlayOpen && overlayDriver && (
         <DriverOverlay driver={overlayDriver} onClose={() => setOverlayOpen(false)} />
+      )}
+
+      {showHistory && (
+        <div className="fixed inset-0 bg-white z-50 overflow-y-auto">
+          <div className="p-4 flex justify-end">
+            <button
+              onClick={() => setShowHistory(false)}
+              className="px-3 py-2 rounded-full border border-gray-300 bg-white hover:bg-gray-50"
+            >
+              Close
+            </button>
+          </div>
+          <div className="max-w-3xl mx-auto p-4 space-y-3">
+            <h2 className="text-xl font-semibold mb-2">My Rides</h2>
+            {historyLoading ? (
+              <p>Loading…</p>
+            ) : history.length === 0 ? (
+              <p className="text-gray-500">No rides yet</p>
+            ) : (
+              history.map((r) => (
+                <div key={r.id} className="border rounded-lg p-3">
+                  <div className="flex justify-between text-sm">
+                    <div>
+                      <div className="font-mono">{r.id.slice(0,8)}</div>
+                      <div className="text-gray-600">Status: {r.status}</div>
+                    </div>
+                    <div className="text-right text-gray-600">
+                      <div>{new Date(r.created_at).toLocaleString()}</div>
+                      {r.ended_at && <div>Ended: {new Date(r.ended_at).toLocaleString()}</div>}
+                    </div>
+                  </div>
+                  <div className="mt-2 text-sm text-gray-700">
+                    <div>Pickup: {r.pickup_lat?.toFixed?.(5) ?? '-'}, {r.pickup_lng?.toFixed?.(5) ?? '-'}</div>
+                    <div>Driver: {r.full_name || '-'} ({r.license_plate || '-'})</div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       )}
     </div>
   )
