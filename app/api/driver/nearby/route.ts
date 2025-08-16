@@ -31,6 +31,18 @@ export async function GET(req: NextRequest) {
 
     const client = await pool.connect()
     try {
+      // Ensure a permissive read policy exists in environments where init didn't run
+      try {
+        await client.query(`DO $$ BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_policies
+            WHERE schemaname = 'public' AND tablename = 'driver_presence' AND policyname = 'Anyone can read driver_presence'
+          ) THEN
+            EXECUTE 'CREATE POLICY "Anyone can read driver_presence" ON public.driver_presence FOR SELECT USING (true)';
+          END IF;
+        END $$;`)
+      } catch {}
+
       const recentRes = await client.query(
         `SELECT COUNT(*)::int AS cnt FROM driver_presence WHERE last_seen > NOW() - INTERVAL '2 minutes'`
       )
@@ -42,9 +54,10 @@ export async function GET(req: NextRequest) {
            AND lng BETWEEN $3 AND $4`,
         [minLat, maxLat, minLng, maxLng]
       )
+      const recentTotal = recentRes.rows[0]?.cnt ?? 0
       let count = rectRes.rows[0]?.cnt ?? 0
       // Fallback: if 0 in small rect but there are recent drivers, widen once to be permissive for demos
-      if (count === 0 && (recentRes.rows[0]?.cnt ?? 0) > 0) {
+      if (count === 0 && recentTotal > 0) {
         const wideRes = await client.query(
           `SELECT COUNT(*)::int AS cnt
            FROM driver_presence
@@ -55,7 +68,7 @@ export async function GET(req: NextRequest) {
         )
         count = wideRes.rows[0]?.cnt ?? 0
       }
-      return NextResponse.json({ ok: true, count })
+      return NextResponse.json({ ok: true, count, recentTotal, bounds: { minLat, maxLat, minLng, maxLng } })
     } finally {
       client.release()
     }
