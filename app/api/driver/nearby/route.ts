@@ -57,19 +57,27 @@ export async function GET(req: NextRequest) {
       const recentTotal = recentRes.rows[0]?.cnt ?? 0
       let count = rectRes.rows[0]?.cnt ?? 0
       // Fallback: if 0 in small rect but there are recent drivers, widen once to be permissive for demos
+      const wideRes = await client.query(
+        `SELECT COUNT(*)::int AS cnt
+         FROM driver_presence
+         WHERE last_seen > NOW() - INTERVAL '2 minutes'
+           AND lat BETWEEN $1 AND $2
+           AND lng BETWEEN $3 AND $4`,
+        [lat - 1, lat + 1, lng - 1, lng + 1]
+      )
+      const wideCount = wideRes.rows[0]?.cnt ?? 0
       if (count === 0 && recentTotal > 0) {
-        const wideRes = await client.query(
-          `SELECT COUNT(*)::int AS cnt
-           FROM driver_presence
-           WHERE last_seen > NOW() - INTERVAL '2 minutes'
-             AND lat BETWEEN $1 AND $2
-             AND lng BETWEEN $3 AND $4`,
-          [lat - 1, lat + 1, lng - 1, lng + 1]
-        )
-        count = wideRes.rows[0]?.cnt ?? 0
+        count = wideCount
       }
-      console.log('Nearby request', { lat, lng, halfWidth, halfHeight, bounds: { minLat, maxLat, minLng, maxLng }, recentTotal, count })
-      return NextResponse.json({ ok: true, count, recentTotal, bounds: { minLat, maxLat, minLng, maxLng } })
+      const samples = await client.query(
+        `SELECT user_id::text, lat, lng, last_seen
+         FROM driver_presence
+         WHERE last_seen > NOW() - INTERVAL '2 minutes'
+         ORDER BY last_seen DESC
+         LIMIT 5`
+      )
+      console.log('Nearby request', { lat, lng, halfWidth, halfHeight, bounds: { minLat, maxLat, minLng, maxLng }, recentTotal, count, wideCount, samples: samples.rows })
+      return NextResponse.json({ ok: true, count, recentTotal, wideCount, bounds: { minLat, maxLat, minLng, maxLng }, samples: samples.rows })
     } finally {
       client.release()
     }
