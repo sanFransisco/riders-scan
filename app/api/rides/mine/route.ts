@@ -20,6 +20,8 @@ export async function GET() {
                 r.pickup_lng,
                 r.dropoff_lat,
                 r.dropoff_lng,
+                r.amount,
+                r.currency,
                 d.license_plate,
                 d.full_name
          FROM rides r

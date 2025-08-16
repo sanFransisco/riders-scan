@@ -283,6 +283,9 @@ export default function RiderPage() {
                   <div className="mt-2 text-sm text-gray-700">
                     <div>Pickup: {r.pickup_lat?.toFixed?.(5) ?? '-'}, {r.pickup_lng?.toFixed?.(5) ?? '-'}</div>
                     <div>Driver: {r.full_name || '-'} ({r.license_plate || '-'})</div>
+                    {r.amount != null && (
+                      <div className="mt-1">Fare: {r.amount} {r.currency || 'ILS'}</div>
+                    )}
                   </div>
                 </div>
               ))

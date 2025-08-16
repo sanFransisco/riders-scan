@@ -20,6 +20,8 @@ export async function GET() {
                 r.pickup_lng,
                 r.dropoff_lat,
                 r.dropoff_lng,
+                r.amount,
+                r.currency,
                 u.name   AS rider_name,
                 u.email  AS rider_email
          FROM rides r
