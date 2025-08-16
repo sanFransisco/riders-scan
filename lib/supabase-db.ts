@@ -473,6 +473,42 @@ export async function initDatabase() {
       console.log('✅ Applied migration to version 6 (presence + rides without PostGIS)')
     }
 
+    if (currentVersion < 7) {
+      // Version 7: ensure drivers.user_id column exists and has proper constraints
+      await client.query(`
+        DO $$ BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'drivers' AND column_name = 'user_id'
+          ) THEN
+            ALTER TABLE drivers ADD COLUMN user_id UUID;
+          END IF;
+        END $$;
+      `)
+      await client.query(`
+        DO $$ BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_indexes WHERE schemaname = 'public' AND tablename = 'drivers' AND indexname = 'ux_drivers_user_id'
+          ) THEN
+            CREATE UNIQUE INDEX ux_drivers_user_id ON drivers(user_id);
+          END IF;
+        END $$;
+      `)
+      await client.query(`
+        DO $$ BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.table_constraints
+            WHERE table_name = 'drivers' AND constraint_name = 'fk_drivers_user_id'
+          ) THEN
+            ALTER TABLE drivers
+            ADD CONSTRAINT fk_drivers_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
+          END IF;
+        END $$;
+      `)
+      await client.query('UPDATE schema_version SET version = 7, updated_at = NOW() WHERE id = 1')
+      console.log('✅ Applied migration to version 7 (drivers.user_id column & constraints)')
+    }
+
     client.release()
     console.log('🎉 Database setup completed successfully! You are now an admin with role-based scopes.')
   } catch (error) {
