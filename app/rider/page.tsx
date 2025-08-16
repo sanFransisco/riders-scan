@@ -54,7 +54,7 @@ export default function RiderPage() {
       const res = await fetch(`/api/rides/${id}`, { cache: 'no-store' })
       if (!res.ok) return
       const { ride } = await res.json()
-      if (ride?.driver_accepted_at && !ride?.rider_consented_at) {
+      if ((ride?.status === 'consented') || (ride?.driver_accepted_at && !ride?.rider_consented_at)) {
         setRideStatus('consent')
         setConsentDriver({ license_plate: ride.license_plate, full_name: ride.full_name })
         // TODO: show driver analytics inline here (fetch and display)
@@ -101,8 +101,12 @@ export default function RiderPage() {
         const { ride } = await res.json()
         if (ride?.id) {
           setMatchId(ride.id)
-          if (ride.status === 'pending' || ride.status === 'consented') {
+          if (ride.status === 'pending') {
             setRideStatus('matching')
+            startPolling(ride.id)
+          } else if (ride.status === 'consented') {
+            setRideStatus('consent')
+            setConsentDriver({ license_plate: ride.license_plate, full_name: ride.full_name })
             startPolling(ride.id)
           } else if (ride.status === 'ontrip') {
             setRideStatus('ontrip')
