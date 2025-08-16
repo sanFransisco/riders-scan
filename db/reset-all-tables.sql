@@ -49,15 +49,15 @@ CREATE TABLE public.role_scopes (
 );
 
 CREATE TABLE public.drivers (
-  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id       uuid UNIQUE REFERENCES public.users(id) ON DELETE SET NULL,
-  full_name     text,
-  license_plate text UNIQUE NOT NULL,
+  id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id          uuid UNIQUE REFERENCES public.users(id) ON DELETE SET NULL,
+  full_name        text,
+  license_plate    text UNIQUE NOT NULL,
   payment_provider text DEFAULT 'meshulam',
   payment_link     text,
   payment_active   boolean DEFAULT false,
-  created_at    timestamp DEFAULT now(),
-  updated_at    timestamp DEFAULT now()
+  created_at       timestamp DEFAULT now(),
+  updated_at       timestamp DEFAULT now()
 );
 
 CREATE TABLE public.reviews (
@@ -94,7 +94,7 @@ CREATE TABLE public.driver_presence (
   battery_pct  smallint
 );
 
--- Rides (includes consent timestamps)
+-- Rides (consent timestamps + fare)
 CREATE TABLE public.rides (
   id                 uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   rider_id           uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
@@ -115,12 +115,12 @@ CREATE TABLE public.rides (
 );
 
 -- 5) Indexes
-CREATE INDEX IF NOT EXISTS idx_users_email              ON public.users(email);
-CREATE INDEX IF NOT EXISTS idx_drivers_license_plate    ON public.drivers(license_plate);
-CREATE INDEX IF NOT EXISTS idx_reviews_driver_id        ON public.reviews(driver_id);
-CREATE INDEX IF NOT EXISTS idx_reviews_user_id          ON public.reviews(user_id);
+CREATE INDEX IF NOT EXISTS idx_users_email               ON public.users(email);
+CREATE INDEX IF NOT EXISTS idx_drivers_license_plate     ON public.drivers(license_plate);
+CREATE INDEX IF NOT EXISTS idx_reviews_driver_id         ON public.reviews(driver_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_user_id           ON public.reviews(user_id);
 CREATE INDEX IF NOT EXISTS idx_driver_presence_last_seen ON public.driver_presence(last_seen);
-CREATE INDEX IF NOT EXISTS idx_driver_presence_lat_lng  ON public.driver_presence(lat, lng);
+CREATE INDEX IF NOT EXISTS idx_driver_presence_lat_lng   ON public.driver_presence(lat, lng);
 CREATE UNIQUE INDEX IF NOT EXISTS ux_rides_driver_active ON public.rides(driver_id) WHERE ended_at IS NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS ux_rides_rider_active  ON public.rides(rider_id) WHERE ended_at IS NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS ux_drivers_user_id     ON public.drivers(user_id);
@@ -172,12 +172,12 @@ SET role = (SELECT ARRAY(SELECT DISTINCT UNNEST(public.users.role || ARRAY['user
     updated_at = now();
 
 -- 10) RLS on + policies
-ALTER TABLE public.users          ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.drivers        ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.reviews        ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.role_scopes    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.users           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.drivers         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.reviews         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.role_scopes     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.driver_presence ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.rides          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.rides           ENABLE ROW LEVEL SECURITY;
 
 -- users
 DROP POLICY IF EXISTS "Users can read own data"    ON public.users;
@@ -222,6 +222,9 @@ CREATE POLICY "Only admins can manage role scopes" ON public.role_scopes FOR ALL
 );
 
 -- driver_presence self policies
+DROP POLICY IF EXISTS "Anyone can read driver_presence" ON public.driver_presence;
+CREATE POLICY "Anyone can read driver_presence" ON public.driver_presence FOR SELECT USING (true);
+
 DROP POLICY IF EXISTS driver_presence_self_insert ON public.driver_presence;
 CREATE POLICY driver_presence_self_insert ON public.driver_presence FOR INSERT WITH CHECK (user_id = auth.uid()::uuid);
 

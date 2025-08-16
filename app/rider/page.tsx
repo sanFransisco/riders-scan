@@ -62,7 +62,7 @@ export default function RiderPage() {
         const p = await new Promise<GeolocationPosition>((resolve, reject) =>
           navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, maximumAge: 10000, timeout: 8000 })
         )
-        const res = await fetch(`/api/driver/nearby?lat=${p.coords.latitude}&lng=${p.coords.longitude}`)
+        const res = await fetch(`/api/driver/nearby?lat=${p.coords.latitude}&lng=${p.coords.longitude}`, { cache: 'no-store' })
         if (res.ok) {
           const data = await res.json()
           setNearbyCount(typeof data.count === 'number' ? data.count : 0)

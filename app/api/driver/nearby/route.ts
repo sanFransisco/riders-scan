@@ -7,10 +7,7 @@ import { pool } from '@/lib/supabase-db'
 // Counts drivers with recent presence inside a simple lat/lng rectangle.
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(serverAuthOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    // Public read allowed by RLS policy; no auth required
 
     const { searchParams } = new URL(req.url)
     const latStr = searchParams.get('lat')
