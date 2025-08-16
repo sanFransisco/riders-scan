@@ -66,24 +66,14 @@ export async function GET(req: NextRequest) {
         [lat - 1, lat + 1, lng - 1, lng + 1]
       )
       const wideCount = wideRes.rows[0]?.cnt ?? 0
-      let displayCount = count
-      if (displayCount <= 0 && wideCount > 0) {
-        displayCount = wideCount
-        console.warn('Nearby: Ignoring small rectangle; using wide rectangle', {
-          reason: 'small rectangle empty but wide has drivers',
+      // Do NOT inflate displayCount beyond the small rectangle.
+      // Only log when zero to aid debugging.
+      if (count === 0) {
+        console.warn('Nearby: 0 drivers in small rectangle (~20km box)', {
           lat, lng,
           smallBounds: { minLat, maxLat, minLng, maxLng },
           halfWidth, halfHeight,
-          recentTotal, smallCount: count, wideCount
-        })
-      } else if (displayCount <= 0 && recentTotal > 0) {
-        displayCount = recentTotal
-        console.warn('Nearby: Ignoring rectangle completely; using recent total presence', {
-          reason: 'both small and wide empty but presence exists',
-          lat, lng,
-          smallBounds: { minLat, maxLat, minLng, maxLng },
-          halfWidth, halfHeight,
-          recentTotal, smallCount: count, wideCount
+          recentTotal, wideCount
         })
       }
       const samples = await client.query(
@@ -93,8 +83,8 @@ export async function GET(req: NextRequest) {
          ORDER BY last_seen DESC
          LIMIT 5`
       )
-      console.log('Nearby request', { lat, lng, halfWidth, halfHeight, bounds: { minLat, maxLat, minLng, maxLng }, recentTotal, count, wideCount, displayCount, samples: samples.rows })
-      return NextResponse.json({ ok: true, count, recentTotal, wideCount, displayCount, bounds: { minLat, maxLat, minLng, maxLng }, samples: samples.rows })
+      console.log('Nearby request', { lat, lng, halfWidth, halfHeight, bounds: { minLat, maxLat, minLng, maxLng }, recentTotal, count, wideCount, samples: samples.rows })
+      return NextResponse.json({ ok: true, count, recentTotal, wideCount, bounds: { minLat, maxLat, minLng, maxLng } })
     } finally {
       client.release()
     }
