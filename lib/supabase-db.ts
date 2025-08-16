@@ -507,7 +507,7 @@ export async function initDatabase() {
 
           UPDATE schema_version SET version = 7, updated_at = NOW() WHERE id = 1;
         END
-        $$;
+        $$ LANGUAGE plpgsql;
       `)
       console.log('✅ Applied migration to version 7 (drivers.user_id column & constraints)')
     }
