@@ -25,6 +25,10 @@ export default function DriverClient() {
   const [paymentLink, setPaymentLink] = useState('')
   const [paymentActive, setPaymentActive] = useState(false)
   const [showPayment, setShowPayment] = useState(false)
+  const [fareOpen, setFareOpen] = useState(false)
+  const [fareRideId, setFareRideId] = useState<string | null>(null)
+  const [fareAmount, setFareAmount] = useState<string>('')
+  const [fareError, setFareError] = useState<string>('')
   const watchId = useRef<number | null>(null)
   const offersTimer = useRef<ReturnType<typeof setInterval> | null>(null)
   const heartbeatTimer = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -164,18 +168,28 @@ export default function DriverClient() {
     await fetch(`/api/rides/${id}/start`, { method: 'POST' })
   }
 
-  const completeRide = async (id: string) => {
-    let amt: number | null = null
-    const input = window.prompt('Enter fare amount (ILS):')
-    if (input != null && input.trim() !== '') {
-      const n = Number(input)
-      if (!Number.isNaN(n) && n >= 0) amt = Number(n.toFixed(2))
+  const openFareOverlay = (id: string) => {
+    setFareRideId(id)
+    setFareAmount('')
+    setFareError('')
+    setFareOpen(true)
+  }
+
+  const submitFare = async () => {
+    if (!fareRideId) return
+    const n = Number(fareAmount)
+    if (Number.isNaN(n) || n <= 0) {
+      setFareError('Enter a valid amount greater than 0')
+      return
     }
-    await fetch(`/api/rides/${id}/complete`, {
+    setFareError('')
+    await fetch(`/api/rides/${fareRideId}/complete`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount: amt, currency: 'ILS' })
+      body: JSON.stringify({ amount: Number(n.toFixed(2)), currency: 'ILS' })
     })
+    setFareOpen(false)
+    setFareRideId(null)
   }
 
   return (
@@ -247,7 +261,7 @@ export default function DriverClient() {
                     )}
                     {o.status === 'ontrip' && (
                       <button
-                        onClick={() => completeRide(o.id)}
+                        onClick={() => openFareOverlay(o.id)}
                         className="px-3 py-1.5 rounded-full border border-gray-300 bg-white hover:bg-gray-50"
                       >
                         Complete (enter fare)
@@ -299,6 +313,43 @@ export default function DriverClient() {
                   className="px-4 py-2 rounded-full border border-gray-300 bg-white text-black hover:bg-gray-50"
                 >
                   Save
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {fareOpen && (
+        <div className="fixed inset-0 bg-white z-50 overflow-y-auto">
+          <div className="p-4 flex justify-end">
+            <button
+              onClick={() => { setFareOpen(false); setFareRideId(null) }}
+              className="px-3 py-2 rounded-full border border-gray-300 bg-white hover:bg-gray-50"
+            >
+              Close
+            </button>
+          </div>
+          <div className="max-w-xl mx-auto p-4 space-y-3">
+            <h2 className="text-xl font-semibold">Complete Ride</h2>
+            <div className="space-y-2">
+              <label className="block text-sm text-gray-700">Fare amount (ILS)</label>
+              <input
+                type="number"
+                inputMode="decimal"
+                min="0"
+                step="0.01"
+                value={fareAmount}
+                onChange={(e) => setFareAmount(e.target.value)}
+                placeholder="0.00"
+                className="w-full px-3 py-2 border rounded-md"
+              />
+              {fareError && <div className="text-sm text-red-600">{fareError}</div>}
+              <div>
+                <button
+                  onClick={submitFare}
+                  className="px-4 py-2 rounded-full border border-gray-300 bg-white text-black hover:bg-gray-50"
+                >
+                  Save & Complete
                 </button>
               </div>
             </div>
