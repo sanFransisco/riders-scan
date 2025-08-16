@@ -43,21 +43,28 @@ export async function POST(req: NextRequest) {
       console.log('Presence last30s:', presenceWindow.rows[0]?.c, 'candidates:', candidates.rows.length)
 
       if (candidates.rows.length === 0) {
-        // Fallback: ignore rectangle if presence exists; helps when devices report coarse IP-based GPS
-        if ((presenceWindow.rows[0]?.c || 0) > 0) {
-          const anyNearby = await client.query(
-            `SELECT dp.driver_id
-             FROM driver_presence dp
-             WHERE NOW() - dp.last_seen <= INTERVAL '2 minutes'
-               AND NOT EXISTS (
-                 SELECT 1 FROM rides r WHERE r.driver_id = dp.driver_id AND r.ended_at IS NULL
-               )
-             ORDER BY dp.last_seen DESC
-             LIMIT 10;`
-          )
-          console.log('Fallback candidates:', anyNearby.rows.length)
-          candidates = anyNearby
-        }
+        // Fallback: widen once (±1°) with explicit log
+        const anyNearby = await client.query(
+          `SELECT dp.driver_id
+           FROM driver_presence dp
+           WHERE NOW() - dp.last_seen <= INTERVAL '2 minutes'
+             AND dp.lat BETWEEN $1 AND $2
+             AND dp.lng BETWEEN $3 AND $4
+             AND NOT EXISTS (
+               SELECT 1 FROM rides r WHERE r.driver_id = dp.driver_id AND r.ended_at IS NULL
+             )
+           ORDER BY dp.last_seen DESC
+           LIMIT 20;`,
+          [pickup.lat - 1, pickup.lat + 1, pickup.lng - 1, pickup.lng + 1]
+        )
+        console.warn('Match: small rectangle empty, widening once', {
+          riderLat: pickup.lat, riderLng: pickup.lng,
+          smallBounds: { minLat: pickup.lat - delta, maxLat: pickup.lat + delta, minLng: pickup.lng - delta, maxLng: pickup.lng + delta },
+          wideBounds: { minLat: pickup.lat - 1, maxLat: pickup.lat + 1, minLng: pickup.lng - 1, maxLng: pickup.lng + 1 },
+          presenceLast2m: presenceWindow.rows[0]?.c || 0,
+          widenedCandidates: anyNearby.rows.length
+        })
+        candidates = anyNearby
         if (candidates.rows.length === 0) {
           return NextResponse.json({ ok: false, message: 'No drivers nearby', debug: { presenceLast2m: presenceWindow.rows[0]?.c || 0 } }, { status: 200 })
         }

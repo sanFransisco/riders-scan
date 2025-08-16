@@ -66,7 +66,26 @@ export async function GET(req: NextRequest) {
         [lat - 1, lat + 1, lng - 1, lng + 1]
       )
       const wideCount = wideRes.rows[0]?.cnt ?? 0
-      const displayCount = count > 0 ? count : (wideCount > 0 ? wideCount : recentTotal)
+      let displayCount = count
+      if (displayCount <= 0 && wideCount > 0) {
+        displayCount = wideCount
+        console.warn('Nearby: Ignoring small rectangle; using wide rectangle', {
+          reason: 'small rectangle empty but wide has drivers',
+          lat, lng,
+          smallBounds: { minLat, maxLat, minLng, maxLng },
+          halfWidth, halfHeight,
+          recentTotal, smallCount: count, wideCount
+        })
+      } else if (displayCount <= 0 && recentTotal > 0) {
+        displayCount = recentTotal
+        console.warn('Nearby: Ignoring rectangle completely; using recent total presence', {
+          reason: 'both small and wide empty but presence exists',
+          lat, lng,
+          smallBounds: { minLat, maxLat, minLng, maxLng },
+          halfWidth, halfHeight,
+          recentTotal, smallCount: count, wideCount
+        })
+      }
       const samples = await client.query(
         `SELECT user_id::text, lat, lng, last_seen
          FROM driver_presence
