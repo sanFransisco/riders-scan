@@ -24,6 +24,7 @@ export default function DriverClient() {
   const [historyLoading, setHistoryLoading] = useState(false)
   const [paymentLink, setPaymentLink] = useState('')
   const [paymentActive, setPaymentActive] = useState(false)
+  const [showPayment, setShowPayment] = useState(false)
   const watchId = useRef<number | null>(null)
   const offersTimer = useRef<ReturnType<typeof setInterval> | null>(null)
   const heartbeatTimer = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -200,22 +201,7 @@ export default function DriverClient() {
           My Rides
         </button>
 
-        <button
-          onClick={async () => {
-            try {
-              const res = await fetch('/api/driver/payment')
-              if (res.ok) {
-                const data = await res.json()
-                setPaymentLink(data.payment?.payment_link || '')
-                setPaymentActive(!!data.payment?.payment_active)
-                alert(`Payment: ${data.payment?.payment_provider || 'meshulam'}\nActive: ${!!data.payment?.payment_active}\nLink: ${data.payment?.payment_link || '-'}`)
-              }
-            } catch {}
-          }}
-          className="px-4 py-2 rounded-full border border-gray-300 bg-white text-black hover:bg-gray-50"
-        >
-          Payment Settings
-        </button>
+        <button onClick={() => setShowPayment(true)} className="px-4 py-2 rounded-full border border-gray-300 bg-white text-black hover:bg-gray-50">Payment Settings</button>
       </div>
 
       <div className="bg-white border rounded-lg p-4">
@@ -264,6 +250,51 @@ export default function DriverClient() {
           </div>
         )}
       </div>
+      {showPayment && (
+        <div className="fixed inset-0 bg-white z-50 overflow-y-auto">
+          <div className="p-4 flex justify-end">
+            <button
+              onClick={() => setShowPayment(false)}
+              className="px-3 py-2 rounded-full border border-gray-300 bg-white hover:bg-gray-50"
+            >
+              Close
+            </button>
+          </div>
+          <div className="max-w-xl mx-auto p-4 space-y-3">
+            <h2 className="text-xl font-semibold">Payment Settings</h2>
+            <div className="space-y-2">
+              <label className="block text-sm text-gray-700">Meshulam Grow business link</label>
+              <input
+                value={paymentLink}
+                onChange={(e) => setPaymentLink(e.target.value)}
+                placeholder="https://meshulam.biz/s/your-link"
+                className="w-full px-3 py-2 border rounded-md"
+              />
+              <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                <input type="checkbox" checked={paymentActive} onChange={(e) => setPaymentActive(e.target.checked)} />
+                Active (required to accept rides)
+              </label>
+              <div>
+                <button
+                  onClick={async () => {
+                    try {
+                      await fetch('/api/driver/payment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ payment_link: paymentLink, payment_active: paymentActive, payment_provider: 'meshulam' })
+                      })
+                      alert('Saved')
+                    } catch { alert('Failed to save') }
+                  }}
+                  className="px-4 py-2 rounded-full border border-gray-300 bg-white text-black hover:bg-gray-50"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {showHistory && (
         <div className="fixed inset-0 bg-white z-50 overflow-y-auto">
           <div className="p-4 flex justify-end">
