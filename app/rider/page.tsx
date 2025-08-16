@@ -58,19 +58,8 @@ export default function RiderPage() {
       if ((ride?.status === 'consented') || (ride?.driver_accepted_at && !ride?.rider_consented_at)) {
         setRideStatus('consent')
         setConsentDriver({ license_plate: ride.license_plate, full_name: ride.full_name, driver_profile_id: ride.driver_profile_id })
-        // TODO: show driver analytics inline here (fetch and display)
-        if (autoAcceptIn == null) {
-          let seconds = 10
-          setAutoAcceptIn(seconds)
-          const t: ReturnType<typeof setInterval> = setInterval(() => {
-            seconds -= 1
-            setAutoAcceptIn(seconds)
-            if (seconds <= 0) {
-              clearInterval(t)
-              approveRide(id)
-            }
-          }, 1000)
-        }
+        // explicit consent only
+        if (autoAcceptIn !== null) setAutoAcceptIn(null)
       } else if (ride?.status === 'ontrip') {
         setRideStatus('ontrip')
       }
