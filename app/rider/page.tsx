@@ -22,14 +22,19 @@ export default function RiderPage() {
   const [autoAcceptIn, setAutoAcceptIn] = useState<number | null>(null)
   const [nearbyCount, setNearbyCount] = useState<number | null>(null)
   const nearbyTimer = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [dropoffAddress, setDropoffAddress] = useState('')
 
   const requestRide = async () => {
     if (!navigator.geolocation) return alert('Geolocation not supported')
+    if (!dropoffAddress || dropoffAddress.trim().length < 3) {
+      return alert('Please enter your drop-off address')
+    }
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const body = {
           pickup: { lat: pos.coords.latitude, lng: pos.coords.longitude },
           dropoff: null,
+          dropoff_address: dropoffAddress.trim(),
           service: null,
         }
         const res = await fetch('/api/match/request', {
@@ -199,12 +204,20 @@ export default function RiderPage() {
       </div>
 
       {rideStatus === 'idle' && (
-        <button
-          onClick={requestRide}
-          className="px-4 py-2 rounded-full border border-gray-300 bg-white text-black hover:bg-gray-50"
-        >
-          Request Ride
-        </button>
+        <div className="space-y-2">
+          <input
+            value={dropoffAddress}
+            onChange={(e) => setDropoffAddress(e.target.value)}
+            placeholder="Enter drop-off address"
+            className="w-full px-3 py-2 border rounded-md"
+          />
+          <button
+            onClick={requestRide}
+            className="px-4 py-2 rounded-full border border-gray-300 bg-white text-black hover:bg-gray-50"
+          >
+            Request Ride
+          </button>
+        </div>
       )}
 
       {nearbyCount != null && (

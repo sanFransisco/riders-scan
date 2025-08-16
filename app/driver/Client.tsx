@@ -10,6 +10,9 @@ interface Offer {
   expires_at: string | null
   pickup_lat: number | null
   pickup_lng: number | null
+  dropoff_lat?: number | null
+  dropoff_lng?: number | null
+  dropoff_address?: string | null
   driver_accepted_at: string | null
   rider_consented_at: string | null
 }
@@ -243,6 +246,9 @@ export default function DriverClient() {
                     <div className="text-sm text-gray-600">Ride ID: {o.id.slice(0, 8)}</div>
                     <div className="text-sm">Pickup: {o.pickup_lat?.toFixed(5)}, {o.pickup_lng?.toFixed(5)}</div>
                     <div className="text-xs text-gray-500">Status: {o.status}</div>
+                    {o.dropoff_address && (
+                      <div className="text-xs text-gray-700">Drop-off: {o.dropoff_address}</div>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     {!o.driver_accepted_at && (

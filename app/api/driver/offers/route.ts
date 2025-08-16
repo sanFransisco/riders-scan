@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
       const res = await client.query(
         `SELECT id, rider_id, driver_id, status, created_at, expires_at,
                 driver_accepted_at, rider_consented_at,
-                pickup_lat, pickup_lng
+                pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, dropoff_address
          FROM rides
          WHERE driver_id = $1
            AND (

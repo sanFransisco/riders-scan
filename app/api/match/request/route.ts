@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { pickup, dropoff, service } = body || {}
+    const { pickup, dropoff, dropoff_address, service } = body || {}
     console.log('Match request:', {
       riderId: (await getServerSession(serverAuthOptions))?.user?.id,
       pickup,
@@ -107,10 +107,10 @@ export async function POST(req: NextRequest) {
         if (excludeSelf && row.driver_id === excludeSelf) continue
         try {
           const insert = await client.query(
-            `INSERT INTO rides (rider_id, driver_id, pickup_lat, pickup_lng, status, created_at, expires_at)
-             VALUES ($1, $2, $3, $4, 'pending', NOW(), NOW() + INTERVAL '2 minutes')
+            `INSERT INTO rides (rider_id, driver_id, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, dropoff_address, status, created_at, expires_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', NOW(), NOW() + INTERVAL '2 minutes')
              RETURNING id`,
-            [riderId, row.driver_id, pickup.lat, pickup.lng]
+            [riderId, row.driver_id, pickup.lat, pickup.lng, dropoff?.lat ?? null, dropoff?.lng ?? null, dropoff_address ?? null]
           )
           rideId = insert.rows[0].id
           break

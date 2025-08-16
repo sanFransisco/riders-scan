@@ -575,6 +575,23 @@ export async function initDatabase() {
       console.log('✅ Applied migration to version 8 (payments)')
     }
 
+    if (currentVersion < 9) {
+      await client.query(`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'rides' AND column_name = 'dropoff_address'
+          ) THEN
+            ALTER TABLE rides ADD COLUMN dropoff_address TEXT;
+          END IF;
+          UPDATE schema_version SET version = 9, updated_at = NOW() WHERE id = 1;
+        END
+        $$ LANGUAGE plpgsql;
+      `)
+      console.log('✅ Applied migration to version 9 (rides.dropoff_address)')
+    }
+
     client.release()
     console.log('🎉 Database setup completed successfully! You are now an admin with role-based scopes.')
   } catch (error) {

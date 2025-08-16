@@ -103,6 +103,7 @@ CREATE TABLE public.rides (
   pickup_lng         double precision,
   dropoff_lat        double precision,
   dropoff_lng        double precision,
+  dropoff_address    text,
   status             text NOT NULL CHECK (status IN ('pending','consented','enroute','ontrip','completed','canceled')),
   amount             numeric(10,2),
   currency           text DEFAULT 'ILS',
@@ -239,7 +240,7 @@ CREATE TABLE public.schema_version (
 );
 
 INSERT INTO public.schema_version (id, version)
-VALUES (1, 8)
-ON CONFLICT (id) DO UPDATE SET version = 8, updated_at = now();
+VALUES (1, 9)
+ON CONFLICT (id) DO UPDATE SET version = 9, updated_at = now();
 
 COMMIT;
