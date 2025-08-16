@@ -37,19 +37,11 @@ export default function OnboardingPage() {
     const res = await fetch('/api/auth/onboarding', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role }),
+      body: JSON.stringify({ role, license_plate: role === 'driver' ? license : undefined }),
     })
     setSaving(false)
     if (res.ok) {
-      if (role === 'driver') {
-        try {
-          await fetch('/api/driver/onboarding', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ license_plate: license }),
-          })
-        } catch {}
-      }
+      // driver profile now created within auth onboarding transaction
       // Force session refresh and hard redirect so server-side gating sees updated roles
       try { await fetch('/api/auth/session?update=1', { cache: 'no-store' }) } catch {}
       window.location.href = role === 'driver' ? '/driver' : '/'
