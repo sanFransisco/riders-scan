@@ -51,7 +51,7 @@ export default function RiderPage() {
   const startPolling = (id: string) => {
     if (pollTimer.current) clearInterval(pollTimer.current)
     pollTimer.current = setInterval(async () => {
-      const res = await fetch(`/api/rides/${id}`)
+      const res = await fetch(`/api/rides/${id}`, { cache: 'no-store' })
       if (!res.ok) return
       const { ride } = await res.json()
       if (ride?.driver_accepted_at && !ride?.rider_consented_at) {
