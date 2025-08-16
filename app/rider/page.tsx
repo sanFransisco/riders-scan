@@ -11,7 +11,7 @@ export default function RiderPage() {
   const router = useRouter()
   const [matchId, setMatchId] = useState<string | null>(null)
   const [rideStatus, setRideStatus] = useState<string>('idle')
-  const [consentDriver, setConsentDriver] = useState<{ license_plate?: string; full_name?: string } | null>(null)
+  const [consentDriver, setConsentDriver] = useState<{ license_plate?: string; full_name?: string; driver_profile_id?: string } | null>(null)
   const [overlayDriver, setOverlayDriver] = useState<DriverAnalytics | null>(null)
   const [overlayOpen, setOverlayOpen] = useState(false)
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -56,7 +56,7 @@ export default function RiderPage() {
       const { ride } = await res.json()
       if ((ride?.status === 'consented') || (ride?.driver_accepted_at && !ride?.rider_consented_at)) {
         setRideStatus('consent')
-        setConsentDriver({ license_plate: ride.license_plate, full_name: ride.full_name })
+        setConsentDriver({ license_plate: ride.license_plate, full_name: ride.full_name, driver_profile_id: ride.driver_profile_id })
         // TODO: show driver analytics inline here (fetch and display)
         if (autoAcceptIn == null) {
           let seconds = 10
@@ -106,7 +106,7 @@ export default function RiderPage() {
             startPolling(ride.id)
           } else if (ride.status === 'consented') {
             setRideStatus('consent')
-            setConsentDriver({ license_plate: ride.license_plate, full_name: ride.full_name })
+            setConsentDriver({ license_plate: ride.license_plate, full_name: ride.full_name, driver_profile_id: ride.driver_profile_id })
             startPolling(ride.id)
           } else if (ride.status === 'ontrip') {
             setRideStatus('ontrip')
@@ -147,18 +147,16 @@ export default function RiderPage() {
             </div>
           )}
           <div className="flex gap-2">
-            {consentDriver?.license_plate && (
+            {consentDriver?.driver_profile_id && (
               <button
                 onClick={async () => {
                   try {
-                    if (!consentDriver?.license_plate) return
-                    // Fetch by license plate -> first get driver id
-                    const res = await fetch(`/api/drivers?q=${encodeURIComponent(consentDriver.license_plate)}`)
+                    // Fetch analytics directly by driver id for accuracy
+                    const res = await fetch(`/api/drivers/${consentDriver.driver_profile_id}`)
                     if (res.ok) {
-                      const list = await res.json()
-                      if (Array.isArray(list) && list.length > 0) {
-                        const driver = list[0] as DriverAnalytics
-                        setOverlayDriver(driver)
+                      const data = await res.json()
+                      if (data?.analytics) {
+                        setOverlayDriver(data.analytics as DriverAnalytics)
                         setOverlayOpen(true)
                       }
                     }
