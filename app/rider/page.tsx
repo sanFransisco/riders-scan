@@ -20,6 +20,8 @@ export default function RiderPage() {
   const [historyLoading, setHistoryLoading] = useState(false)
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null)
   const [autoAcceptIn, setAutoAcceptIn] = useState<number | null>(null)
+  const [nearbyCount, setNearbyCount] = useState<number | null>(null)
+  const nearbyTimer = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const requestRide = async () => {
     if (!navigator.geolocation) return alert('Geolocation not supported')
@@ -51,6 +53,26 @@ export default function RiderPage() {
       { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
     )
   }
+
+  // Periodically show count of nearby drivers to reassure user
+  useEffect(() => {
+    if (!navigator.geolocation) return
+    const load = async () => {
+      try {
+        const p = await new Promise<GeolocationPosition>((resolve, reject) =>
+          navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, maximumAge: 10000, timeout: 8000 })
+        )
+        const res = await fetch(`/api/driver/nearby?lat=${p.coords.latitude}&lng=${p.coords.longitude}`)
+        if (res.ok) {
+          const data = await res.json()
+          setNearbyCount(typeof data.count === 'number' ? data.count : 0)
+        }
+      } catch {}
+    }
+    load()
+    nearbyTimer.current = setInterval(load, 10000)
+    return () => { if (nearbyTimer.current) clearInterval(nearbyTimer.current) }
+  }, [])
 
   const startPolling = (id: string) => {
     if (pollTimer.current) clearInterval(pollTimer.current)
@@ -181,6 +203,10 @@ export default function RiderPage() {
         >
           Request Ride
         </button>
+      )}
+
+      {nearbyCount != null && (
+        <div className="text-sm text-gray-600">Drivers nearby: {nearbyCount}</div>
       )}
 
       {rideStatus === 'matching' && <p>Looking for a driver...</p>}
