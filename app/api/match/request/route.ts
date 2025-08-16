@@ -66,7 +66,32 @@ export async function POST(req: NextRequest) {
         })
         candidates = anyNearby
         if (candidates.rows.length === 0) {
-          return NextResponse.json({ ok: false, message: 'No drivers nearby', debug: { presenceLast2m: presenceWindow.rows[0]?.c || 0 } }, { status: 200 })
+          // Log distances of recent drivers from rider
+          const recents = await client.query(
+            `SELECT user_id::text, lat, lng, last_seen
+             FROM driver_presence
+             WHERE NOW() - last_seen <= INTERVAL '2 minutes'
+             ORDER BY last_seen DESC
+             LIMIT 20;`
+          )
+          const toRad = (d: number) => (d * Math.PI) / 180
+          const havKm = (aLat: number, aLng: number, bLat: number, bLng: number) => {
+            const R = 6371
+            const dLat = toRad(bLat - aLat)
+            const dLng = toRad(bLng - aLng)
+            const s = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLng / 2) ** 2
+            const c = 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s))
+            return R * c
+          }
+          const distances = recents.rows.map((row: any) => ({
+            user_id: row.user_id,
+            lat: Number(row.lat),
+            lng: Number(row.lng),
+            last_seen: row.last_seen,
+            distance_km: havKm(pickup.lat, pickup.lng, Number(row.lat), Number(row.lng))
+          })).sort((a: any, b: any) => a.distance_km - b.distance_km).slice(0, 10)
+          console.warn('Match: no drivers available after widen; distances from rider (km)', { rider: { lat: pickup.lat, lng: pickup.lng }, distances })
+          return NextResponse.json({ ok: false, message: 'No drivers nearby', debug: { presenceLast2m: presenceWindow.rows[0]?.c || 0, distances } }, { status: 200 })
         }
       }
 
@@ -96,7 +121,32 @@ export async function POST(req: NextRequest) {
       }
 
       if (!rideId) {
-        return NextResponse.json({ ok: false, message: 'All nearby drivers became busy' }, { status: 200 })
+        // Extra logging in rare race condition where all got busy
+        const recents = await client.query(
+          `SELECT user_id::text, lat, lng, last_seen
+           FROM driver_presence
+           WHERE NOW() - last_seen <= INTERVAL '2 minutes'
+           ORDER BY last_seen DESC
+           LIMIT 20;`
+        )
+        const toRad = (d: number) => (d * Math.PI) / 180
+        const havKm = (aLat: number, aLng: number, bLat: number, bLng: number) => {
+          const R = 6371
+          const dLat = toRad(bLat - aLat)
+          const dLng = toRad(bLng - aLng)
+          const s = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLng / 2) ** 2
+          const c = 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s))
+          return R * c
+        }
+        const distances = recents.rows.map((row: any) => ({
+          user_id: row.user_id,
+          lat: Number(row.lat),
+          lng: Number(row.lng),
+          last_seen: row.last_seen,
+          distance_km: havKm(pickup.lat, pickup.lng, Number(row.lat), Number(row.lng))
+        })).sort((a: any, b: any) => a.distance_km - b.distance_km).slice(0, 10)
+        console.warn('Match: all nearby drivers became busy; distances from rider (km)', { rider: { lat: pickup.lat, lng: pickup.lng }, distances })
+        return NextResponse.json({ ok: false, message: 'All nearby drivers became busy', debug: { distances } }, { status: 200 })
       }
 
       return NextResponse.json({ ok: true, matchId: rideId })
