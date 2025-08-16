@@ -512,6 +512,69 @@ export async function initDatabase() {
       console.log('✅ Applied migration to version 7 (drivers.user_id column & constraints)')
     }
 
+    if (currentVersion < 8) {
+      await client.query(`
+        DO $$
+        BEGIN
+          -- drivers.payment fields
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'drivers' AND column_name = 'payment_link'
+          ) THEN
+            ALTER TABLE drivers ADD COLUMN payment_link TEXT;
+          END IF;
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'drivers' AND column_name = 'payment_provider'
+          ) THEN
+            ALTER TABLE drivers ADD COLUMN payment_provider TEXT DEFAULT 'meshulam';
+          END IF;
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'drivers' AND column_name = 'payment_active'
+          ) THEN
+            ALTER TABLE drivers ADD COLUMN payment_active BOOLEAN DEFAULT false;
+          END IF;
+
+          -- rides payment fields
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'rides' AND column_name = 'amount'
+          ) THEN
+            ALTER TABLE rides ADD COLUMN amount NUMERIC(10,2);
+          END IF;
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'rides' AND column_name = 'currency'
+          ) THEN
+            ALTER TABLE rides ADD COLUMN currency TEXT DEFAULT 'ILS';
+          END IF;
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'rides' AND column_name = 'payment_status'
+          ) THEN
+            ALTER TABLE rides ADD COLUMN payment_status TEXT DEFAULT 'pending';
+          END IF;
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'rides' AND column_name = 'payment_url'
+          ) THEN
+            ALTER TABLE rides ADD COLUMN payment_url TEXT;
+          END IF;
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'rides' AND column_name = 'payment_ref'
+          ) THEN
+            ALTER TABLE rides ADD COLUMN payment_ref TEXT;
+          END IF;
+
+          UPDATE schema_version SET version = 8, updated_at = NOW() WHERE id = 1;
+        END
+        $$ LANGUAGE plpgsql;
+      `)
+      console.log('✅ Applied migration to version 8 (payments)')
+    }
+
     client.release()
     console.log('🎉 Database setup completed successfully! You are now an admin with role-based scopes.')
   } catch (error) {

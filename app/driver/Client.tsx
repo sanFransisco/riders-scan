@@ -22,6 +22,8 @@ export default function DriverClient() {
   const [showHistory, setShowHistory] = useState(false)
   const [history, setHistory] = useState<any[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
+  const [paymentLink, setPaymentLink] = useState('')
+  const [paymentActive, setPaymentActive] = useState(false)
   const watchId = useRef<number | null>(null)
   const offersTimer = useRef<ReturnType<typeof setInterval> | null>(null)
   const heartbeatTimer = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -178,7 +180,7 @@ export default function DriverClient() {
         </button>
       </div>
 
-      <div>
+      <div className="flex gap-2 items-center">
         <button
           onClick={async () => {
             setShowHistory(true)
@@ -196,6 +198,23 @@ export default function DriverClient() {
           className="px-4 py-2 rounded-full border border-gray-300 bg-white text-black hover:bg-gray-50"
         >
           My Rides
+        </button>
+
+        <button
+          onClick={async () => {
+            try {
+              const res = await fetch('/api/driver/payment')
+              if (res.ok) {
+                const data = await res.json()
+                setPaymentLink(data.payment?.payment_link || '')
+                setPaymentActive(!!data.payment?.payment_active)
+                alert(`Payment: ${data.payment?.payment_provider || 'meshulam'}\nActive: ${!!data.payment?.payment_active}\nLink: ${data.payment?.payment_link || '-'}`)
+              }
+            } catch {}
+          }}
+          className="px-4 py-2 rounded-full border border-gray-300 bg-white text-black hover:bg-gray-50"
+        >
+          Payment Settings
         </button>
       </div>
 
