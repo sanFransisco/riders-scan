@@ -66,9 +66,7 @@ export async function GET(req: NextRequest) {
         [lat - 1, lat + 1, lng - 1, lng + 1]
       )
       const wideCount = wideRes.rows[0]?.cnt ?? 0
-      if (count === 0 && recentTotal > 0) {
-        count = wideCount
-      }
+      const displayCount = count > 0 ? count : (wideCount > 0 ? wideCount : recentTotal)
       const samples = await client.query(
         `SELECT user_id::text, lat, lng, last_seen
          FROM driver_presence
@@ -76,8 +74,8 @@ export async function GET(req: NextRequest) {
          ORDER BY last_seen DESC
          LIMIT 5`
       )
-      console.log('Nearby request', { lat, lng, halfWidth, halfHeight, bounds: { minLat, maxLat, minLng, maxLng }, recentTotal, count, wideCount, samples: samples.rows })
-      return NextResponse.json({ ok: true, count, recentTotal, wideCount, bounds: { minLat, maxLat, minLng, maxLng }, samples: samples.rows })
+      console.log('Nearby request', { lat, lng, halfWidth, halfHeight, bounds: { minLat, maxLat, minLng, maxLng }, recentTotal, count, wideCount, displayCount, samples: samples.rows })
+      return NextResponse.json({ ok: true, count, recentTotal, wideCount, displayCount, bounds: { minLat, maxLat, minLng, maxLng }, samples: samples.rows })
     } finally {
       client.release()
     }

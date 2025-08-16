@@ -67,7 +67,8 @@ export default function RiderPage() {
         if (res.ok) {
           const data = await res.json()
           console.log('Nearby response', { url, data })
-          setNearbyCount(typeof data.count === 'number' ? data.count : 0)
+          const n = typeof data.displayCount === 'number' ? data.displayCount : (typeof data.count === 'number' ? data.count : 0)
+          setNearbyCount(n)
         }
       } catch {}
     }
