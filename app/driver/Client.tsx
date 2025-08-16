@@ -56,6 +56,8 @@ export default function DriverClient() {
             service: 'Other'
           }),
         }).catch(() => {})
+        // Simple log to help debug presence
+        console.log('Heartbeat sent', { latitude, longitude })
       },
       (err) => {
         console.error('Geolocation error', err)

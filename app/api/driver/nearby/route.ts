@@ -31,7 +31,10 @@ export async function GET(req: NextRequest) {
 
     const client = await pool.connect()
     try {
-      const res = await client.query(
+      const recentRes = await client.query(
+        `SELECT COUNT(*)::int AS cnt FROM driver_presence WHERE last_seen > NOW() - INTERVAL '2 minutes'`
+      )
+      const rectRes = await client.query(
         `SELECT COUNT(*)::int AS cnt
          FROM driver_presence
          WHERE last_seen > NOW() - INTERVAL '2 minutes'
@@ -39,7 +42,19 @@ export async function GET(req: NextRequest) {
            AND lng BETWEEN $3 AND $4`,
         [minLat, maxLat, minLng, maxLng]
       )
-      const count = res.rows[0]?.cnt ?? 0
+      let count = rectRes.rows[0]?.cnt ?? 0
+      // Fallback: if 0 in small rect but there are recent drivers, widen once to be permissive for demos
+      if (count === 0 && (recentRes.rows[0]?.cnt ?? 0) > 0) {
+        const wideRes = await client.query(
+          `SELECT COUNT(*)::int AS cnt
+           FROM driver_presence
+           WHERE last_seen > NOW() - INTERVAL '2 minutes'
+             AND lat BETWEEN $1 AND $2
+             AND lng BETWEEN $3 AND $4`,
+          [lat - 1, lat + 1, lng - 1, lng + 1]
+        )
+        count = wideRes.rows[0]?.cnt ?? 0
+      }
       return NextResponse.json({ ok: true, count })
     } finally {
       client.release()
